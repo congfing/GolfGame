@@ -153,6 +153,21 @@
     .opt-grid { grid-template-columns: 1fr; }
     .par-panel-18 { grid-template-columns: repeat(9, 1fr); }
   }
+
+  /* チームカラー */
+  .team1-cell input { color: #1a5fc8; font-weight: 600; }
+  .team2-cell input { color: #d45c00; font-weight: 600; }
+  .team1-cell { border-left: 2px solid rgba(41,121,255,0.25) !important; }
+  .team2-cell { border-left: 2px solid rgba(255,109,0,0.25) !important; }
+
+  /* 得点列 */
+  .vscore-col { font-weight: 700; font-size: 13px; min-width: 44px; }
+  .vscore-t1 { color: #1a5fc8; background: #eef3ff; }
+  .vscore-t2 { color: #d45c00; background: #fff3e6; }
+  .vscore-tie { color: #999; }
+
+  /* ラウンド区切り */
+  tr.round-sep td { border-top: 2px solid #1d9e75 !important; }
 </style>
 </head>
 <body>
@@ -224,8 +239,13 @@
         <option value="9">9ホール</option>
         <option value="18" selected>18ホール</option>
       </select>
+      <label>スタートH</label>
+      <select id="startHoleSelect" onchange="startHole=parseInt(this.value); rebuildAll();">
+        <option value="1">1番から</option>
+        <option value="10">10番から</option>
+      </select>
       <label>レート</label>
-      <input type="number" id="rate" value="10" onchange="calculate()" />
+      <input type="number" id="rate" value="100" onchange="calculate()" />
       <span style="font-size: 13px; color: #5f5e5a;">円/点</span>
       <button class="action" style="margin-left: auto;" onclick="clearAll()">クリア</button>
       <button class="action primary" onclick="saveData()">保存</button>
@@ -250,12 +270,35 @@
   <div class="card" id="vegasOptSection">
     <h2>ラスベガス オプション</h2>
     <div class="opt-grid">
-      <div class="opt-row">
-        <label>ペアリング</label>
-        <select id="vPair" onchange="calculate()">
-          <option value="fixed">固定（最初の組み合わせ）</option>
-          <option value="rotate">ホール毎に入れ替え</option>
-        </select>
+      <div class="opt-row" style="align-items:flex-start; flex-direction:column; gap:6px;">
+        <label>ペアリング（ラウンド毎）</label>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;" id="pairRoundRow">
+          <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
+            <span style="font-size:11px; color:#888;">R1・R4・R7…</span>
+            <select id="vPairR0" onchange="vegasPairings[0]=parseInt(this.value); rebuildHoles(); calculate();" style="font-size:12px;">
+              <option value="0">AB vs CD</option>
+              <option value="1">AC vs BD</option>
+              <option value="2">AD vs BC</option>
+            </select>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
+            <span style="font-size:11px; color:#888;">R2・R5・R8…</span>
+            <select id="vPairR1" onchange="vegasPairings[1]=parseInt(this.value); rebuildHoles(); calculate();" style="font-size:12px;">
+              <option value="0">AB vs CD</option>
+              <option value="1" selected>AC vs BD</option>
+              <option value="2">AD vs BC</option>
+            </select>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
+            <span style="font-size:11px; color:#888;">R3・R6・R9…</span>
+            <select id="vPairR2" onchange="vegasPairings[2]=parseInt(this.value); rebuildHoles(); calculate();" style="font-size:12px;">
+              <option value="0">AB vs CD</option>
+              <option value="1">AC vs BD</option>
+              <option value="2" selected>AD vs BC</option>
+            </select>
+          </div>
+        </div>
+        <div id="pairPreviewRow" style="font-size:11px; color:#888; margin-top:2px;"></div>
       </div>
       <div class="opt-row">
         <label>10打以上</label>
@@ -301,10 +344,10 @@
         <label>ダイヤモンド</label>
         <select id="oDiamond" onchange="calculate()">
           <option value="0">なし</option>
-          <option value="5" selected>5点</option>
+          <option value="5">5点</option>
           <option value="6">6点</option>
           <option value="8">8点</option>
-          <option value="10">10点</option>
+          <option value="10" selected>10点</option>
         </select>
       </div>
       <div class="opt-row">
@@ -343,10 +386,17 @@
 
 <script>
   let mode = 'both';
+  let startHole = 1;
+  const PAIR_DEFS = [
+    {t1:[0,1], t2:[2,3], label:'AB vs CD'},
+    {t1:[0,2], t2:[1,3], label:'AC vs BD'},
+    {t1:[0,3], t2:[1,2], label:'AD vs BC'}
+  ];
+  let vegasPairings = [0, 1, 2]; // 各ラウンドに使うPAIR_DEFSのインデックス
   let playerCount = 4;
   let holeCount = 18;
   let selectedWeather = '';
-  const defaultNames = ['A', 'B', 'C', 'D'];
+  const defaultNames = ['後藤', '西山', 'りえ', ''];
 
   // 標準的なゴルフコースのパー構成（Par72）
   const STANDARD_PARS = [4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 5, 4, 4];
@@ -412,9 +462,28 @@
     return (document.getElementById('pname' + p)?.value) || defaultNames[p];
   }
 
+  function getDisplayHole(h) {
+    return ((h + startHole - 1) % 18) + 1;
+  }
+
   function getPar(h) {
     const v = document.getElementById('par_' + h)?.value;
     return v ? parseInt(v) : 4;
+  }
+
+
+  function updatePairLabels() {
+    const labels = [
+      getName(0) + getName(1) + ' vs ' + getName(2) + getName(3),
+      getName(0) + getName(2) + ' vs ' + getName(1) + getName(3),
+      getName(0) + getName(3) + ' vs ' + getName(1) + getName(2),
+    ];
+    [0,1,2].forEach(ri => {
+      const sel = document.getElementById('vPairR' + ri);
+      if (!sel) return;
+      sel.querySelectorAll('option').forEach((opt, oi) => { opt.textContent = labels[oi]; });
+    });
+    updatePairPreview();
   }
 
   function rebuildPlayers() {
@@ -427,7 +496,7 @@
       inp.type = 'text';
       inp.value = defaultNames[i];
       inp.id = 'pname' + i;
-      inp.oninput = () => { rebuildHoles(); };
+      inp.oninput = () => { rebuildHoles(); updatePairLabels(); };
       row.appendChild(inp);
     }
     rebuildHoles();
@@ -451,7 +520,7 @@
       cell.className = 'par-cell';
       const label = document.createElement('div');
       label.className = 'h';
-      label.textContent = 'H' + (h + 1);
+      label.textContent = 'H' + getDisplayHole(h);
       cell.appendChild(label);
       const sel = document.createElement('select');
       sel.id = 'par_' + h;
@@ -509,7 +578,8 @@
     if (ghostPlayer) {
       thead += '<th style="color:#888780;">4人目<br><span style="font-size:10px;">Par+1</span></th>';
     }
-    if (showBirdie) thead += '<th>🐦 Birdie</th>';
+
+    if (showVegas) thead += '<th class="vscore-col">得点</th>';
     if (showOlympic) {
       for (let p = 0; p < playerCount; p++) {
         thead += '<th>' + getName(p) + '<br><span style="font-size:10px;color:#888780;">順位</span></th>';
@@ -519,24 +589,24 @@
 
     let tbody = '<tbody>';
     for (let h = 0; h < holeCount; h++) {
-      tbody += '<tr><td class="hole-num">' + (h + 1) + '</td>';
+      const _isRndSep = h > 0 && (h % 3 === 0);
+      tbody += '<tr' + (_isRndSep ? ' class="round-sep"' : '') + '><td class="hole-num">' + getDisplayHole(h) + '</td>';
       const par = getPar(h);
       tbody += '<td class="par-col">' + par + '</td>';
 
+      const _roundIdx = h % 3;
+      const _pd = showVegas ? PAIR_DEFS[vegasPairings[_roundIdx]] : null;
       for (let p = 0; p < playerCount; p++) {
         const sv = savedScores[h + '_' + p] || '';
-        tbody += '<td><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate()" /></td>';
+        const _tc = _pd ? (_pd.t1.includes(p) ? 'team1-cell' : _pd.t2.includes(p) ? 'team2-cell' : '') : '';
+        tbody += '<td class="' + _tc + '"><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate()" /></td>';
       }
       if (ghostPlayer) {
         tbody += '<td class="ghost-col">' + (par + 1) + '</td>';
       }
-      if (showBirdie) {
-        const bv = savedBirdies[h] || '';
-        let opts = '<option value="">-</option>';
-        for (let p = 0; p < playerCount; p++) {
-          opts += '<option value="' + p + '"' + (bv == p ? ' selected' : '') + '>' + getName(p) + '</option>';
-        }
-        tbody += '<td><select id="b_' + h + '" onchange="calculate()">' + opts + '</select></td>';
+
+      if (showVegas) {
+        tbody += '<td class="vscore-col" id="vscore_' + h + '">-</td>';
       }
       if (showOlympic) {
         for (let p = 0; p < playerCount; p++) {
@@ -560,9 +630,22 @@
     calculate();
   }
 
+
+  function updatePairPreview() {
+    const el = document.getElementById('pairPreviewRow');
+    if (!el) return;
+    const labels = vegasPairings.map((pi, ri) => {
+      const pd = PAIR_DEFS[pi];
+      const n = p => getName(p) || ['A','B','C','D'][p];
+      return 'R' + (ri+1) + ': ' + n(pd.t1[0]) + '・' + n(pd.t1[1]) + ' vs ' + n(pd.t2[0]) + '・' + n(pd.t2[1]);
+    });
+    el.textContent = labels.join('　');
+  }
+
   function rebuildAll() {
     rebuildParPanel();
     rebuildPlayers();
+    updatePairPreview();
   }
 
   function updateMetalColor(h, p) {
@@ -597,16 +680,9 @@
       else if (cap === '10' && scores[i] >= 10) scores[i] = 10;
     }
 
-    const pairMode = document.getElementById('vPair').value;
-    let t1, t2;
-    if (pairMode === 'fixed') {
-      t1 = [0, 3]; t2 = [1, 2];
-    } else {
-      const rot = h % 3;
-      if (rot === 0) { t1 = [0, 3]; t2 = [1, 2]; }
-      else if (rot === 1) { t1 = [0, 1]; t2 = [2, 3]; }
-      else { t1 = [0, 2]; t2 = [1, 3]; }
-    }
+    const roundIdx = h % 3;
+    const pd = PAIR_DEFS[vegasPairings[roundIdx]];
+    const t1 = pd.t1, t2 = pd.t2;
 
     function teamScore(team) {
       const a = Math.min(scores[team[0]], scores[team[1]]);
@@ -617,31 +693,18 @@
     let s1 = teamScore(t1);
     let s2 = teamScore(t2);
 
-    // バーディー逆転（4人目の仮想プレイヤーはバーディー判定の対象外）
+    // バーディー自動検出（スコアがパー未満 = バーディー）
     const birdieMode = document.getElementById('vBirdie').value;
     if (birdieMode !== 'off') {
-      const bp = document.getElementById('b_' + h)?.value;
-      if (bp !== '' && bp !== undefined && bp !== null) {
-        const bpi = parseInt(bp);
-        if (bpi < playerCount) { // 実在プレイヤーのみ
-          const par = getPar(h);
-          const realScore = getScore(h, bpi);
-          if (realScore !== null && realScore < par) {
-            if (birdieMode === 'on') {
-              if (t1.includes(bpi)) {
-                const a = Math.min(scores[t2[0]], scores[t2[1]]);
-                const b = Math.max(scores[t2[0]], scores[t2[1]]);
-                s2 = b * 10 + a;
-              } else {
-                const a = Math.min(scores[t1[0]], scores[t1[1]]);
-                const b = Math.max(scores[t1[0]], scores[t1[1]]);
-                s1 = b * 10 + a;
-              }
-            } else if (birdieMode === 'double') {
-              if (t1.includes(bpi)) s2 *= 2; else s1 *= 2;
-            }
-          }
-        }
+      const par = getPar(h);
+      const t1Birdie = t1.some(p => scores[p] !== undefined && scores[p] < par);
+      const t2Birdie = t2.some(p => scores[p] !== undefined && scores[p] < par);
+      if (birdieMode === 'on') {
+        if (t1Birdie) { const a=Math.min(scores[t2[0]],scores[t2[1]]);const b=Math.max(scores[t2[0]],scores[t2[1]]);s2=b*10+a; }
+        if (t2Birdie) { const a=Math.min(scores[t1[0]],scores[t1[1]]);const b=Math.max(scores[t1[0]],scores[t1[1]]);s1=b*10+a; }
+      } else if (birdieMode === 'double') {
+        if (t1Birdie) s2 *= 2;
+        if (t2Birdie) s1 *= 2;
       }
     }
 
@@ -695,7 +758,19 @@
         const v = calcVegasHole(h);
         if (v) {
           for (let p = 0; p < playerCount; p++) vegasTotals[p] += v[p];
-          // 仮想4人目（3人プレー時のv[3]）は集計しない
+          const vCell = document.getElementById('vscore_' + h);
+          if (vCell) {
+            const ri = h % 3;
+            const pd = PAIR_DEFS[vegasPairings[ri]];
+            const t1pts = v[pd.t1[0]];
+            const absVal = Math.abs(t1pts);
+            if (t1pts > 0) { vCell.textContent = '+' + absVal; vCell.className = 'vscore-col vscore-t1'; }
+            else if (t1pts < 0) { vCell.textContent = '+' + absVal; vCell.className = 'vscore-col vscore-t2'; }
+            else { vCell.textContent = '0'; vCell.className = 'vscore-col vscore-tie'; }
+          }
+        } else {
+          const vCell = document.getElementById('vscore_' + h);
+          if (vCell) { vCell.textContent = '-'; vCell.className = 'vscore-col'; }
         }
       }
       if (mode !== 'vegas') {
