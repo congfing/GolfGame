@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ゴルフ得点計算 - ラスベガス＆オリンピック</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: #f5f5f0;
+    color: #2c2c2a;
+    margin: 0;
+    padding: 16px;
+    font-size: 14px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 20px; margin: 0 0 16px; font-weight: 500; }
+  h2 { font-size: 15px; margin: 0 0 12px; font-weight: 500; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+  .tab {
+    padding: 8px 16px; background: #fff; border: 1px solid #d3d1c7;
+    cursor: pointer; font-size: 14px; border-radius: 8px;
+  }
+  .tab.active { background: #1d9e75; color: #fff; border-color: #1d9e75; font-weight: 500; }
+
+  .card {
+    background: #fff; border: 1px solid #d3d1c7; border-radius: 12px;
+    padding: 16px; margin-bottom: 12px;
+  }
+
+  .row { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap; }
+  label { font-size: 13px; color: #5f5e5a; }
+
+  input[type="number"], input[type="text"], select {
+    padding: 6px 8px; border: 1px solid #d3d1c7; border-radius: 6px;
+    background: #fff; font-size: 13px; font-family: inherit;
+  }
+  input[type="number"] { width: 60px; text-align: center; }
+  input[type="text"] { width: 80px; }
+
+  .opt-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .opt-row { display: flex; align-items: center; gap: 8px; }
+  .opt-row label { min-width: 90px; }
+
+  /* パー入力 */
+  .par-panel {
+    display: grid; grid-template-columns: repeat(9, 1fr);
+    gap: 4px; margin-top: 8px;
+  }
+  .par-panel-18 { grid-template-columns: repeat(18, 1fr); }
+  .par-cell { text-align: center; }
+  .par-cell .h { font-size: 10px; color: #888780; margin-bottom: 2px; }
+  .par-cell select {
+    width: 100%; padding: 4px 2px; font-size: 12px; text-align: center;
+    min-width: 34px;
+  }
+  .par-preset { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .preset-btn {
+    padding: 4px 10px; background: #f5f5f0; border: 1px solid #d3d1c7;
+    border-radius: 6px; cursor: pointer; font-size: 11px;
+  }
+  .preset-btn:hover { background: #e8e6dd; }
+
+  .hole-wrapper { overflow-x: auto; }
+  table.scores {
+    width: 100%; border-collapse: collapse; font-size: 13px; min-width: 600px;
+  }
+  table.scores th, table.scores td {
+    border: 1px solid #e8e6dd; padding: 4px; text-align: center;
+  }
+  table.scores th {
+    background: #f5f5f0; font-weight: 500; font-size: 12px; color: #5f5e5a;
+    position: sticky; top: 0;
+  }
+  table.scores input, table.scores select {
+    width: 100%; min-width: 50px; padding: 3px; font-size: 12px;
+    border: 1px solid transparent; background: transparent;
+  }
+  table.scores input:focus, table.scores select:focus {
+    border-color: #1d9e75; outline: none; background: #fff;
+  }
+  .hole-num { font-weight: 500; color: #5f5e5a; background: #f9f8f3; }
+  .par-col { background: #f9f8f3; color: #5f5e5a; }
+  .ghost-col { background: #faf9f4; color: #888780; font-style: italic; }
+
+  .result-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+  }
+  .result-card {
+    background: #f5f5f0; border-radius: 8px; padding: 12px;
+  }
+  .result-name { font-size: 13px; color: #5f5e5a; margin-bottom: 4px; }
+  .result-total { font-size: 26px; font-weight: 500; }
+  .result-money { font-size: 12px; color: #888780; margin-top: 2px; }
+  .result-detail {
+    font-size: 11px; color: #888780; margin-top: 6px;
+    border-top: 1px solid #d3d1c7; padding-top: 6px;
+  }
+  .positive { color: #1d9e75; }
+  .negative { color: #e24b4a; }
+
+  .metal-G { background: #faeeda; color: #633806; }
+  .metal-S { background: #f1efe8; color: #444441; }
+  .metal-B { background: #faece7; color: #712b13; }
+  .metal-I { background: #e8e6dd; color: #5f5e5a; }
+  .metal-D { background: #e6f1fb; color: #0c447c; }
+  .metal-X { background: #fcebeb; color: #791f1f; }
+
+  button.action {
+    padding: 6px 14px; background: #fff; border: 1px solid #d3d1c7;
+    border-radius: 6px; cursor: pointer; font-size: 13px;
+  }
+  button.action:hover { background: #f5f5f0; }
+  button.primary { background: #1d9e75; color: #fff; border-color: #1d9e75; }
+  button.primary:hover { background: #0f6e56; }
+
+  .hint {
+    font-size: 11px; color: #888780; margin-top: 4px;
+  }
+  .hidden { display: none !important; }
+
+  /* ラウンド情報 */
+  .round-info { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+  .round-info .field { display: flex; flex-direction: column; gap: 4px; }
+  .round-info label { font-size: 11px; color: #888780; }
+  .round-info input, .round-info select {
+    width: 100%; padding: 6px 8px;
+  }
+  .weather-row { display: flex; gap: 4px; flex-wrap: wrap; }
+  .weather-btn {
+    padding: 4px 8px; border: 1px solid #d3d1c7; border-radius: 6px;
+    background: #fff; cursor: pointer; font-size: 16px; line-height: 1;
+  }
+  .weather-btn.selected { background: #1d9e75; border-color: #1d9e75; }
+  .round-header {
+    display: flex; justify-content: space-between; align-items: baseline;
+    gap: 12px; margin-bottom: 4px; flex-wrap: wrap;
+  }
+  .round-title {
+    font-size: 18px; font-weight: 500; color: #2c2c2a;
+  }
+  .round-sub { font-size: 12px; color: #888780; }
+
+  @media (max-width: 600px) {
+    body { padding: 8px; }
+    .card { padding: 12px; }
+    .opt-grid { grid-template-columns: 1fr; }
+    .par-panel-18 { grid-template-columns: repeat(9, 1fr); }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>ゴルフ得点計算 — ラスベガス ＆ オリンピック</h1>
+
+  <div class="tabs">
+    <button class="tab active" data-mode="both" onclick="setMode('both')">両方</button>
+    <button class="tab" data-mode="vegas" onclick="setMode('vegas')">ラスベガスのみ</button>
+    <button class="tab" data-mode="olympic" onclick="setMode('olympic')">オリンピックのみ</button>
+  </div>
+
+  <div class="card">
+    <div class="round-header">
+      <div>
+        <div class="round-title" id="roundTitle">ラウンド情報</div>
+        <div class="round-sub" id="roundSub"></div>
+      </div>
+    </div>
+    <div class="round-info">
+      <div class="field">
+        <label>ゴルフ場名</label>
+        <input type="text" id="courseName" placeholder="例: ○○カントリークラブ" oninput="updateRoundSummary()" />
+      </div>
+      <div class="field">
+        <label>コース名（任意）</label>
+        <input type="text" id="courseSubName" placeholder="例: 東コース" oninput="updateRoundSummary()" />
+      </div>
+      <div class="field">
+        <label>日付</label>
+        <input type="date" id="roundDate" onchange="updateRoundSummary()" />
+      </div>
+      <div class="field">
+        <label>開始時刻</label>
+        <input type="time" id="roundTime" onchange="updateRoundSummary()" />
+      </div>
+      <div class="field">
+        <label>天気</label>
+        <div class="weather-row" id="weatherRow">
+          <button type="button" class="weather-btn" data-weather="晴れ" title="晴れ" onclick="selectWeather('晴れ')">☀️</button>
+          <button type="button" class="weather-btn" data-weather="曇り" title="曇り" onclick="selectWeather('曇り')">☁️</button>
+          <button type="button" class="weather-btn" data-weather="雨" title="雨" onclick="selectWeather('雨')">🌧️</button>
+          <button type="button" class="weather-btn" data-weather="雪" title="雪" onclick="selectWeather('雪')">❄️</button>
+          <button type="button" class="weather-btn" data-weather="霧" title="霧" onclick="selectWeather('霧')">🌫️</button>
+          <button type="button" class="weather-btn" data-weather="強風" title="強風" onclick="selectWeather('強風')">💨</button>
+        </div>
+      </div>
+      <div class="field">
+        <label>気温（℃）</label>
+        <input type="number" id="temperature" placeholder="例: 22" oninput="updateRoundSummary()" />
+      </div>
+      <div class="field" style="grid-column: 1 / -1;">
+        <label>メモ</label>
+        <input type="text" id="roundMemo" placeholder="風向き、グリーンの状態、その他メモ" oninput="updateRoundSummary()" />
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>基本設定</h2>
+    <div class="row">
+      <label>人数</label>
+      <select id="playerCount" onchange="rebuildPlayers()">
+        <option value="3">3人</option>
+        <option value="4" selected>4人</option>
+      </select>
+      <label>ホール数</label>
+      <select id="holeCount" onchange="rebuildAll()">
+        <option value="9">9ホール</option>
+        <option value="18" selected>18ホール</option>
+      </select>
+      <label>レート</label>
+      <input type="number" id="rate" value="10" onchange="calculate()" />
+      <span style="font-size: 13px; color: #5f5e5a;">円/点</span>
+      <button class="action" style="margin-left: auto;" onclick="clearAll()">クリア</button>
+      <button class="action primary" onclick="saveData()">保存</button>
+      <button class="action" onclick="loadData()">読込</button>
+    </div>
+    <div class="row" id="playerNameRow"></div>
+  </div>
+
+  <div class="card">
+    <h2>Par設定（事前入力）</h2>
+    <div class="hint">各ホールのパーを設定します。バーディー逆転の判定や、3人プレー時の4人目のスコア（Par+1）に使用されます。</div>
+    <div id="parPanel" class="par-panel"></div>
+    <div class="par-preset">
+      <span style="font-size: 11px; color: #5f5e5a; margin-right: 4px;">プリセット:</span>
+      <button class="preset-btn" onclick="applyParPreset('standard')">標準（Par72）</button>
+      <button class="preset-btn" onclick="applyParPreset('all4')">全Par4</button>
+      <button class="preset-btn" onclick="applyParPreset('all3')">全Par3</button>
+      <button class="preset-btn" onclick="applyParPreset('all5')">全Par5</button>
+    </div>
+  </div>
+
+  <div class="card" id="vegasOptSection">
+    <h2>ラスベガス オプション</h2>
+    <div class="opt-grid">
+      <div class="opt-row">
+        <label>ペアリング</label>
+        <select id="vPair" onchange="calculate()">
+          <option value="fixed">固定（最初の組み合わせ）</option>
+          <option value="rotate">ホール毎に入れ替え</option>
+        </select>
+      </div>
+      <div class="opt-row">
+        <label>10打以上</label>
+        <select id="vCap" onchange="calculate()">
+          <option value="none">そのまま</option>
+          <option value="9" selected>9打として計算</option>
+          <option value="10">10打として計算</option>
+        </select>
+      </div>
+      <div class="opt-row">
+        <label>バーディー逆転</label>
+        <select id="vBirdie" onchange="calculate(); rebuildHoles();">
+          <option value="off">なし</option>
+          <option value="on" selected>あり（桁入れ替え）</option>
+          <option value="double">あり（相手得点2倍）</option>
+        </select>
+      </div>
+      <div class="opt-row">
+        <label>1の位切捨て</label>
+        <select id="vTrunc" onchange="calculate()">
+          <option value="off">なし</option>
+          <option value="on">あり</option>
+        </select>
+      </div>
+    </div>
+    <div class="hint" id="threePlayerHint" style="display:none;">
+      ※ 3人プレー時は、4人目の打数を「そのホールのPar+1」として自動計算します（スコア表にグレー表示）。
+    </div>
+  </div>
+
+  <div class="card" id="olympicOptSection">
+    <h2>オリンピック オプション</h2>
+    <div class="opt-grid">
+      <div class="opt-row">
+        <label>金（1位）</label>
+        <select id="oGold" onchange="calculate()">
+          <option value="4" selected>4点</option>
+          <option value="5">5点</option>
+          <option value="8">8点</option>
+        </select>
+      </div>
+      <div class="opt-row">
+        <label>ダイヤモンド</label>
+        <select id="oDiamond" onchange="calculate()">
+          <option value="0">なし</option>
+          <option value="5" selected>5点</option>
+          <option value="6">6点</option>
+          <option value="8">8点</option>
+          <option value="10">10点</option>
+        </select>
+      </div>
+      <div class="opt-row">
+        <label>グズ鉄</label>
+        <select id="oGuzu" onchange="calculate()">
+          <option value="off">なし</option>
+          <option value="on">あり（鉄で外すと-1点）</option>
+        </select>
+      </div>
+      <div class="opt-row">
+        <label>3パット罰</label>
+        <select id="oThreePutt" onchange="calculate()">
+          <option value="off">なし</option>
+          <option value="on">あり</option>
+        </select>
+      </div>
+    </div>
+    <div class="hint">
+      ※ 各ホールで順位（金/銀/銅/鉄/💎/✕）を選択。✕は1パットで決められなかった場合。
+      最終点数は「自分の点×人数 − 全員合計」で計算されます。
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>スコア入力</h2>
+    <div class="hole-wrapper">
+      <table class="scores" id="scoreTable"></table>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>結果</h2>
+    <div id="results" class="result-grid"></div>
+  </div>
+</div>
+
+<script>
+  let mode = 'both';
+  let playerCount = 4;
+  let holeCount = 18;
+  let selectedWeather = '';
+  const defaultNames = ['A', 'B', 'C', 'D'];
+
+  // 標準的なゴルフコースのパー構成（Par72）
+  const STANDARD_PARS = [4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 5, 4, 4];
+
+  function selectWeather(w) {
+    selectedWeather = (selectedWeather === w) ? '' : w;
+    document.querySelectorAll('.weather-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.weather === selectedWeather);
+    });
+    updateRoundSummary();
+  }
+
+  function updateRoundSummary() {
+    const course = document.getElementById('courseName').value.trim();
+    const sub = document.getElementById('courseSubName').value.trim();
+    const date = document.getElementById('roundDate').value;
+    const time = document.getElementById('roundTime').value;
+    const temp = document.getElementById('temperature').value;
+    const memo = document.getElementById('roundMemo').value.trim();
+
+    const title = document.getElementById('roundTitle');
+    const sub_ = document.getElementById('roundSub');
+
+    let titleText = course || 'ラウンド情報';
+    if (sub) titleText += ' / ' + sub;
+    title.textContent = titleText;
+
+    const parts = [];
+    if (date) {
+      const d = new Date(date);
+      const days = ['日', '月', '火', '水', '木', '金', '土'];
+      parts.push(`${d.getFullYear()}年${d.getMonth() + 1}月${d.getDate()}日(${days[d.getDay()]})`);
+    }
+    if (time) parts.push(time + '〜');
+    if (selectedWeather) parts.push(selectedWeather);
+    if (temp) parts.push(temp + '℃');
+    if (memo) parts.push(memo);
+    sub_.textContent = parts.join(' ・ ');
+  }
+
+  // 今日の日付をデフォルトで設定
+  function setDefaultDate() {
+    const today = new Date();
+    const y = today.getFullYear();
+    const m = String(today.getMonth() + 1).padStart(2, '0');
+    const d = String(today.getDate()).padStart(2, '0');
+    document.getElementById('roundDate').value = `${y}-${m}-${d}`;
+  }
+
+  function setMode(m) {
+    mode = m;
+    document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === m));
+    document.getElementById('vegasOptSection').classList.toggle('hidden', m === 'olympic');
+    document.getElementById('olympicOptSection').classList.toggle('hidden', m === 'vegas');
+    if (m === 'vegas' && playerCount !== 4 && playerCount !== 3) {
+      document.getElementById('playerCount').value = '4';
+      playerCount = 4;
+    }
+    rebuildAll();
+  }
+
+  function getName(p) {
+    return (document.getElementById('pname' + p)?.value) || defaultNames[p];
+  }
+
+  function getPar(h) {
+    const v = document.getElementById('par_' + h)?.value;
+    return v ? parseInt(v) : 4;
+  }
+
+  function rebuildPlayers() {
+    playerCount = parseInt(document.getElementById('playerCount').value);
+    document.getElementById('threePlayerHint').style.display = (playerCount === 3 && mode !== 'olympic') ? '' : 'none';
+    const row = document.getElementById('playerNameRow');
+    row.innerHTML = '<label>名前</label>';
+    for (let i = 0; i < playerCount; i++) {
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.value = defaultNames[i];
+      inp.id = 'pname' + i;
+      inp.oninput = () => { rebuildHoles(); };
+      row.appendChild(inp);
+    }
+    rebuildHoles();
+  }
+
+  function rebuildParPanel() {
+    holeCount = parseInt(document.getElementById('holeCount').value);
+    const panel = document.getElementById('parPanel');
+
+    // 既存のPar値を保持
+    const savedPars = {};
+    for (let h = 0; h < 18; h++) {
+      const el = document.getElementById('par_' + h);
+      if (el) savedPars[h] = el.value;
+    }
+
+    panel.className = 'par-panel' + (holeCount === 18 ? ' par-panel-18' : '');
+    panel.innerHTML = '';
+    for (let h = 0; h < holeCount; h++) {
+      const cell = document.createElement('div');
+      cell.className = 'par-cell';
+      const label = document.createElement('div');
+      label.className = 'h';
+      label.textContent = 'H' + (h + 1);
+      cell.appendChild(label);
+      const sel = document.createElement('select');
+      sel.id = 'par_' + h;
+      sel.innerHTML = '<option value="3">3</option><option value="4" selected>4</option><option value="5">5</option>';
+      const savedVal = savedPars[h] || String(STANDARD_PARS[h] || 4);
+      sel.value = savedVal;
+      sel.onchange = () => { rebuildHoles(); calculate(); };
+      cell.appendChild(sel);
+      panel.appendChild(cell);
+    }
+  }
+
+  function applyParPreset(preset) {
+    for (let h = 0; h < holeCount; h++) {
+      const el = document.getElementById('par_' + h);
+      if (!el) continue;
+      if (preset === 'standard') el.value = String(STANDARD_PARS[h] || 4);
+      else if (preset === 'all4') el.value = '4';
+      else if (preset === 'all3') el.value = '3';
+      else if (preset === 'all5') el.value = '5';
+    }
+    rebuildHoles();
+    calculate();
+  }
+
+  function rebuildHoles() {
+    holeCount = parseInt(document.getElementById('holeCount').value);
+    const table = document.getElementById('scoreTable');
+
+    // 保存された値を退避
+    const savedScores = {};
+    const savedMetals = {};
+    const savedBirdies = {};
+    for (let h = 0; h < 18; h++) {
+      for (let p = 0; p < 4; p++) {
+        const s = document.getElementById('s_' + h + '_' + p);
+        if (s && s.value) savedScores[h + '_' + p] = s.value;
+        const m = document.getElementById('m_' + h + '_' + p);
+        if (m && m.value) savedMetals[h + '_' + p] = m.value;
+      }
+      const b = document.getElementById('b_' + h);
+      if (b && b.value) savedBirdies[h] = b.value;
+    }
+
+    const showVegas = mode !== 'olympic';
+    const showOlympic = mode !== 'vegas';
+    const showBirdie = showVegas && document.getElementById('vBirdie').value !== 'off';
+    const isThreePlayer = playerCount === 3;
+    const ghostPlayer = isThreePlayer && showVegas; // 4人目（仮想）を表示する条件
+
+    let thead = '<thead><tr><th>H</th><th>Par</th>';
+    for (let p = 0; p < playerCount; p++) {
+      thead += '<th>' + getName(p) + '<br><span style="font-size:10px;color:#888780;">打数</span></th>';
+    }
+    if (ghostPlayer) {
+      thead += '<th style="color:#888780;">4人目<br><span style="font-size:10px;">Par+1</span></th>';
+    }
+    if (showBirdie) thead += '<th>🐦 Birdie</th>';
+    if (showOlympic) {
+      for (let p = 0; p < playerCount; p++) {
+        thead += '<th>' + getName(p) + '<br><span style="font-size:10px;color:#888780;">順位</span></th>';
+      }
+    }
+    thead += '</tr></thead>';
+
+    let tbody = '<tbody>';
+    for (let h = 0; h < holeCount; h++) {
+      tbody += '<tr><td class="hole-num">' + (h + 1) + '</td>';
+      const par = getPar(h);
+      tbody += '<td class="par-col">' + par + '</td>';
+
+      for (let p = 0; p < playerCount; p++) {
+        const sv = savedScores[h + '_' + p] || '';
+        tbody += '<td><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate()" /></td>';
+      }
+      if (ghostPlayer) {
+        tbody += '<td class="ghost-col">' + (par + 1) + '</td>';
+      }
+      if (showBirdie) {
+        const bv = savedBirdies[h] || '';
+        let opts = '<option value="">-</option>';
+        for (let p = 0; p < playerCount; p++) {
+          opts += '<option value="' + p + '"' + (bv == p ? ' selected' : '') + '>' + getName(p) + '</option>';
+        }
+        tbody += '<td><select id="b_' + h + '" onchange="calculate()">' + opts + '</select></td>';
+      }
+      if (showOlympic) {
+        for (let p = 0; p < playerCount; p++) {
+          const mv = savedMetals[h + '_' + p] || '';
+          const cls = mv ? 'metal-' + mv : '';
+          let opts = '<option value="">-</option>';
+          const metals = [
+            ['G', '金 🥇'], ['S', '銀 🥈'], ['B', '銅 🥉'],
+            ['I', '鉄'], ['D', '💎'], ['X', '外し']
+          ];
+          metals.forEach(m => {
+            opts += '<option value="' + m[0] + '"' + (mv === m[0] ? ' selected' : '') + '>' + m[1] + '</option>';
+          });
+          tbody += '<td class="' + cls + '"><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select></td>';
+        }
+      }
+      tbody += '</tr>';
+    }
+    tbody += '</tbody>';
+    table.innerHTML = thead + tbody;
+    calculate();
+  }
+
+  function rebuildAll() {
+    rebuildParPanel();
+    rebuildPlayers();
+  }
+
+  function updateMetalColor(h, p) {
+    const sel = document.getElementById('m_' + h + '_' + p);
+    const td = sel.parentElement;
+    td.className = sel.value ? 'metal-' + sel.value : '';
+  }
+
+  function getScore(h, p) {
+    const v = document.getElementById('s_' + h + '_' + p)?.value;
+    return v ? parseInt(v) : null;
+  }
+
+  function calcVegasHole(h) {
+    if (mode === 'olympic') return null;
+    // 4人目のスコアを取得（3人プレー時は Par+1 を仮想4人目とする）
+    const scores = [];
+    for (let p = 0; p < playerCount; p++) {
+      let s = getScore(h, p);
+      if (s === null) return null;
+      scores.push(s);
+    }
+    if (playerCount === 3) {
+      scores.push(getPar(h) + 1);
+    }
+    if (scores.length !== 4) return null;
+
+    // 10打以上の処理
+    const cap = document.getElementById('vCap').value;
+    for (let i = 0; i < 4; i++) {
+      if (cap === '9' && scores[i] >= 10) scores[i] = 9;
+      else if (cap === '10' && scores[i] >= 10) scores[i] = 10;
+    }
+
+    const pairMode = document.getElementById('vPair').value;
+    let t1, t2;
+    if (pairMode === 'fixed') {
+      t1 = [0, 3]; t2 = [1, 2];
+    } else {
+      const rot = h % 3;
+      if (rot === 0) { t1 = [0, 3]; t2 = [1, 2]; }
+      else if (rot === 1) { t1 = [0, 1]; t2 = [2, 3]; }
+      else { t1 = [0, 2]; t2 = [1, 3]; }
+    }
+
+    function teamScore(team) {
+      const a = Math.min(scores[team[0]], scores[team[1]]);
+      const b = Math.max(scores[team[0]], scores[team[1]]);
+      return a * 10 + b;
+    }
+
+    let s1 = teamScore(t1);
+    let s2 = teamScore(t2);
+
+    // バーディー逆転（4人目の仮想プレイヤーはバーディー判定の対象外）
+    const birdieMode = document.getElementById('vBirdie').value;
+    if (birdieMode !== 'off') {
+      const bp = document.getElementById('b_' + h)?.value;
+      if (bp !== '' && bp !== undefined && bp !== null) {
+        const bpi = parseInt(bp);
+        if (bpi < playerCount) { // 実在プレイヤーのみ
+          const par = getPar(h);
+          const realScore = getScore(h, bpi);
+          if (realScore !== null && realScore < par) {
+            if (birdieMode === 'on') {
+              if (t1.includes(bpi)) {
+                const a = Math.min(scores[t2[0]], scores[t2[1]]);
+                const b = Math.max(scores[t2[0]], scores[t2[1]]);
+                s2 = b * 10 + a;
+              } else {
+                const a = Math.min(scores[t1[0]], scores[t1[1]]);
+                const b = Math.max(scores[t1[0]], scores[t1[1]]);
+                s1 = b * 10 + a;
+              }
+            } else if (birdieMode === 'double') {
+              if (t1.includes(bpi)) s2 *= 2; else s1 *= 2;
+            }
+          }
+        }
+      }
+    }
+
+    if (document.getElementById('vTrunc').value === 'on') {
+      s1 = Math.floor(s1 / 10) * 10;
+      s2 = Math.floor(s2 / 10) * 10;
+    }
+
+    const diff = s1 - s2;
+    const result = [0, 0, 0, 0];
+    result[t1[0]] = -diff; result[t1[1]] = -diff;
+    result[t2[0]] = diff; result[t2[1]] = diff;
+    return result; // 4要素（3人プレー時は最後の要素が仮想4人目の得点、集計には含めない）
+  }
+
+  function calcOlympicHole(h) {
+    const result = new Array(playerCount).fill(0);
+    let hasInput = false;
+    const goldPoint = parseInt(document.getElementById('oGold').value);
+    const diamondPoint = parseInt(document.getElementById('oDiamond').value);
+    const guzuOn = document.getElementById('oGuzu').value === 'on';
+    const threePuttOn = document.getElementById('oThreePutt').value === 'on';
+
+    const pts = { G: goldPoint, S: 3, B: 2, I: 1 };
+
+    for (let p = 0; p < playerCount; p++) {
+      const m = document.getElementById('m_' + h + '_' + p)?.value;
+      if (!m) continue;
+      hasInput = true;
+      if (m === 'D') result[p] += diamondPoint;
+      else if (pts[m] !== undefined) result[p] += pts[m];
+      else if (m === 'X') {
+        if (guzuOn) result[p] -= 1;
+        if (threePuttOn) {
+          const score = getScore(h, p);
+          if (score !== null && score >= 3) {
+            result[p] -= 3;
+          }
+        }
+      }
+    }
+    return hasInput ? result : null;
+  }
+
+  function calculate() {
+    const vegasTotals = new Array(playerCount).fill(0);
+    const olympicRawTotals = new Array(playerCount).fill(0);
+
+    for (let h = 0; h < holeCount; h++) {
+      if (mode !== 'olympic') {
+        const v = calcVegasHole(h);
+        if (v) {
+          for (let p = 0; p < playerCount; p++) vegasTotals[p] += v[p];
+          // 仮想4人目（3人プレー時のv[3]）は集計しない
+        }
+      }
+      if (mode !== 'vegas') {
+        const o = calcOlympicHole(h);
+        if (o) for (let p = 0; p < playerCount; p++) olympicRawTotals[p] += o[p];
+      }
+    }
+
+    let olympicFinal = new Array(playerCount).fill(0);
+    if (mode !== 'vegas') {
+      const sumAll = olympicRawTotals.reduce((a, b) => a + b, 0);
+      for (let p = 0; p < playerCount; p++) {
+        olympicFinal[p] = olympicRawTotals[p] * playerCount - sumAll;
+      }
+    }
+
+    const totals = new Array(playerCount).fill(0);
+    for (let p = 0; p < playerCount; p++) {
+      if (mode !== 'olympic') totals[p] += vegasTotals[p];
+      if (mode !== 'vegas') totals[p] += olympicFinal[p];
+    }
+
+    const rate = parseFloat(document.getElementById('rate').value) || 0;
+    const results = document.getElementById('results');
+    let html = '';
+    for (let p = 0; p < playerCount; p++) {
+      const name = getName(p);
+      const t = totals[p];
+      const cls = t > 0 ? 'positive' : (t < 0 ? 'negative' : '');
+      html += '<div class="result-card">';
+      html += '<div class="result-name">' + name + '</div>';
+      html += '<div class="result-total ' + cls + '">' + (t > 0 ? '+' : '') + t + '<span style="font-size:13px;">点</span></div>';
+      if (rate > 0) {
+        const money = Math.round(t * rate);
+        html += '<div class="result-money">' + (money > 0 ? '+' : '') + money.toLocaleString() + '円</div>';
+      }
+      if (mode === 'both') {
+        html += '<div class="result-detail">';
+        html += 'ラス: ' + (vegasTotals[p] > 0 ? '+' : '') + vegasTotals[p] + '点<br>';
+        html += '五輪: ' + (olympicFinal[p] > 0 ? '+' : '') + olympicFinal[p] + '点 (素点' + olympicRawTotals[p] + ')';
+        html += '</div>';
+      }
+      html += '</div>';
+    }
+    results.innerHTML = html;
+  }
+
+  function clearAll() {
+    if (!confirm('すべての入力をクリアしますか？（Par設定は保持されます）')) return;
+    for (let h = 0; h < holeCount; h++) {
+      for (let p = 0; p < playerCount; p++) {
+        const s = document.getElementById('s_' + h + '_' + p);
+        if (s) s.value = '';
+        const m = document.getElementById('m_' + h + '_' + p);
+        if (m) { m.value = ''; updateMetalColor(h, p); }
+      }
+      const b = document.getElementById('b_' + h);
+      if (b) b.value = '';
+    }
+    calculate();
+  }
+
+  function saveData() {
+    const data = {
+      mode, playerCount, holeCount,
+      names: [], scores: {}, metals: {}, birdies: {}, pars: {},
+      round: {
+        course: document.getElementById('courseName').value,
+        courseSub: document.getElementById('courseSubName').value,
+        date: document.getElementById('roundDate').value,
+        time: document.getElementById('roundTime').value,
+        weather: selectedWeather,
+        temperature: document.getElementById('temperature').value,
+        memo: document.getElementById('roundMemo').value,
+      },
+      options: {
+        rate: document.getElementById('rate').value,
+        vPair: document.getElementById('vPair').value,
+        vCap: document.getElementById('vCap').value,
+        vBirdie: document.getElementById('vBirdie').value,
+        vTrunc: document.getElementById('vTrunc').value,
+        oGold: document.getElementById('oGold').value,
+        oDiamond: document.getElementById('oDiamond').value,
+        oGuzu: document.getElementById('oGuzu').value,
+        oThreePutt: document.getElementById('oThreePutt').value,
+      }
+    };
+    for (let p = 0; p < playerCount; p++) {
+      data.names.push(document.getElementById('pname' + p)?.value || defaultNames[p]);
+    }
+    for (let h = 0; h < holeCount; h++) {
+      for (let p = 0; p < playerCount; p++) {
+        const s = document.getElementById('s_' + h + '_' + p)?.value;
+        if (s) data.scores[h + '_' + p] = s;
+        const m = document.getElementById('m_' + h + '_' + p)?.value;
+        if (m) data.metals[h + '_' + p] = m;
+      }
+      const b = document.getElementById('b_' + h)?.value;
+      if (b) data.birdies[h] = b;
+      const pr = document.getElementById('par_' + h)?.value;
+      if (pr) data.pars[h] = pr;
+    }
+    const json = JSON.stringify(data);
+    const blob = new Blob([json], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+
+    // ファイル名: golf_[日付]_[コース名].json
+    const date = data.round.date ? data.round.date.replace(/-/g, '') :
+      (() => {
+        const now = new Date();
+        return now.getFullYear() +
+          String(now.getMonth() + 1).padStart(2, '0') +
+          String(now.getDate()).padStart(2, '0');
+      })();
+    const courseName = (data.round.course || '').replace(/[\\\/:\*\?"<>\|\s]/g, '_').substring(0, 30);
+    a.download = 'golf_' + date + (courseName ? '_' + courseName : '') + '.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function loadData() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const data = JSON.parse(ev.target.result);
+          mode = data.mode || 'both';
+          document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+          document.getElementById('vegasOptSection').classList.toggle('hidden', mode === 'olympic');
+          document.getElementById('olympicOptSection').classList.toggle('hidden', mode === 'vegas');
+
+          document.getElementById('playerCount').value = data.playerCount || 4;
+          document.getElementById('holeCount').value = data.holeCount || 18;
+
+          if (data.round) {
+            document.getElementById('courseName').value = data.round.course || '';
+            document.getElementById('courseSubName').value = data.round.courseSub || '';
+            document.getElementById('roundDate').value = data.round.date || '';
+            document.getElementById('roundTime').value = data.round.time || '';
+            document.getElementById('temperature').value = data.round.temperature || '';
+            document.getElementById('roundMemo').value = data.round.memo || '';
+            selectedWeather = data.round.weather || '';
+            document.querySelectorAll('.weather-btn').forEach(btn => {
+              btn.classList.toggle('selected', btn.dataset.weather === selectedWeather);
+            });
+            updateRoundSummary();
+          }
+
+          if (data.options) {
+            Object.keys(data.options).forEach(k => {
+              const el = document.getElementById(k);
+              if (el) el.value = data.options[k];
+            });
+          }
+
+          rebuildAll();
+
+          setTimeout(() => {
+            if (data.names) {
+              data.names.forEach((n, i) => {
+                const el = document.getElementById('pname' + i);
+                if (el) el.value = n;
+              });
+            }
+            if (data.pars) Object.keys(data.pars).forEach(k => {
+              const el = document.getElementById('par_' + k);
+              if (el) el.value = data.pars[k];
+            });
+            rebuildHoles();
+
+            setTimeout(() => {
+              if (data.scores) Object.keys(data.scores).forEach(k => {
+                const el = document.getElementById('s_' + k);
+                if (el) el.value = data.scores[k];
+              });
+              if (data.metals) Object.keys(data.metals).forEach(k => {
+                const el = document.getElementById('m_' + k);
+                if (el) {
+                  el.value = data.metals[k];
+                  const parts = k.split('_');
+                  updateMetalColor(parts[0], parts[1]);
+                }
+              });
+              if (data.birdies) Object.keys(data.birdies).forEach(k => {
+                const el = document.getElementById('b_' + k);
+                if (el) el.value = data.birdies[k];
+              });
+              calculate();
+            }, 50);
+          }, 50);
+        } catch (err) {
+          alert('ファイルの読み込みに失敗しました: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
+  }
+
+  setDefaultDate();
+  updateRoundSummary();
+  rebuildAll();
+</script>
+</body>
+</html>
