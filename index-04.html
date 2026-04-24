@@ -406,6 +406,13 @@ tr.round-sep td {
         </select>
       </div>
       <div class="field-row">
+        <span class="field-label">スタートホール</span>
+        <select id="startHoleSelect" onchange="startHole=parseInt(this.value); rebuildAll();">
+          <option value="1">1番ホールから</option>
+          <option value="10">10番ホールから</option>
+        </select>
+      </div>
+      <div class="field-row">
         <span class="field-label">レート（円/点）</span>
         <input type="number" id="rate" value="100">
       </div>
@@ -551,7 +558,7 @@ tr.round-sep td {
 </div>
 
 <script>
-  let mode = 'both', playerCount = 4, holeCount = 18, selectedWeather = '';
+  let mode = 'both', playerCount = 4, holeCount = 18, startHole = 1, selectedWeather = '';
   const defaultNames = ['後藤','西山','りえ',''];
   const STANDARD_PARS = [4,4,3,5,4,4,3,5,4,4,3,5,4,4,3,5,4,4];
   let selectedGame = null;
@@ -602,6 +609,10 @@ tr.round-sep td {
   }
 
   function getName(p) { return document.getElementById('pname'+p)?.value || defaultNames[p]; }
+  function getDisplayHole(h) {
+    return ((h + startHole - 1) % 18) + 1;
+  }
+
   function getPar(h) { return parseInt(document.getElementById('par_'+h)?.value||'4'); }
 
   function rebuildPlayers() {
@@ -637,7 +648,7 @@ tr.round-sep td {
     for (let h=0; h<holeCount; h++) {
       const cell = document.createElement('div');
       cell.className = 'par-cell';
-      cell.innerHTML = `<div class="par-h">H${h+1}</div>
+      cell.innerHTML = `<div class="par-h">H${getDisplayHole(h)}</div>
         <select id="par_${h}" onchange="rebuildHoles();calculate();">
           <option value="3">3</option><option value="4">4</option><option value="5">5</option>
         </select>`;
@@ -684,7 +695,7 @@ tr.round-sep td {
       const _pd=showVegas?PAIR_DEFS[vegasPairings[_rIdx]]:null;
       const _isRndSep=h>0&&_rIdx===0;
       const _rLabel=['R1','R2','R3'][_rIdx];
-      tbody+=`<tr${_isRndSep?' class="round-sep"':''}><td class="h-col">${h+1}</td><td class="par-col">${par}</td>`;
+      tbody+=`<tr${_isRndSep?' class="round-sep"':''}><td class="h-col">${getDisplayHole(h)}</td><td class="par-col">${par}</td>`;
       for(let p=0;p<playerCount;p++) {
         const sv=saved.s[h+'_'+p]||'';
         const _tc=(_pd&&_pd.t1.includes(p))?'team1-cell':(_pd&&_pd.t2.includes(p))?'team2-cell':'';
