@@ -333,6 +333,31 @@ tr.round-sep td {
   .vscore-t1 { color:#2979ff !important; }
   .vscore-t2 { color:#ff6d00 !important; }
   .vscore-tie { color:#999 !important; }
+
+  .history-list { display:flex; flex-direction:column; gap:10px; padding:12px; }
+  .hist-card {
+    background:#fff; border-radius:14px; padding:14px 16px;
+    border:1.5px solid rgba(0,0,0,0.08); box-shadow:0 1px 6px rgba(0,0,0,0.06);
+  }
+  .hist-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .hist-date { font-size:13px; font-weight:700; color:#222; }
+  .hist-course { font-size:11px; color:#888; margin-top:2px; }
+  .hist-players { display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; }
+  .hist-player { display:flex; flex-direction:column; align-items:center;
+    background:#f5f5f5; border-radius:8px; padding:6px 10px; min-width:72px; }
+  .hist-pname { font-size:11px; color:#555; }
+  .hist-pts { font-size:14px; font-weight:700; }
+  .hist-pts.pos { color:#2979ff; }
+  .hist-pts.neg { color:#e53935; }
+  .hist-pts.zero { color:#999; }
+  .hist-yen { font-size:11px; color:#777; margin-top:1px; }
+  .hist-del { background:none; border:none; color:#ccc; font-size:18px; cursor:pointer; padding:2px 6px; }
+  .hist-empty { text-align:center; color:#aaa; padding:40px 20px; font-size:14px; }
+  .hist-btn {
+    display:inline-flex; align-items:center; gap:6px; margin-top:8px;
+    background:none; border:1px solid rgba(0,0,0,0.15); border-radius:20px;
+    padding:6px 14px; font-size:12px; color:#555; cursor:pointer;
+  }
 </style>
 </head>
 <body>
@@ -361,6 +386,7 @@ tr.round-sep td {
     </div>
   </div>
   <button class="arrow-btn" id="arrowBtn" onclick="goToSettings()">›</button>
+  <button class="hist-btn" onclick="showScreen('screen-history'); renderHistory();">📋 履歴を見る</button>
 </div>
 
 <div id="screen-settings" class="screen">
@@ -548,6 +574,18 @@ tr.round-sep td {
   </div>
 </div>
 
+
+<div id="screen-history" class="screen">
+  <div class="screen-header">
+    <button class="back-btn" onclick="showScreen('screen-start')">‹</button>
+    <div class="screen-title">履歴</div>
+    <div></div>
+  </div>
+  <div class="screen-body" style="padding:0;">
+    <div id="historyList" class="history-list"></div>
+  </div>
+</div>
+
 <div id="screen-results" class="screen">
   <div class="screen-header">
     <button class="back-btn" onclick="showScreen('screen-scores')">‹</button>
@@ -574,6 +612,66 @@ tr.round-sep td {
       document.getElementById('check-'+g).textContent = g===m ? '✓' : '';
     });
     document.getElementById('arrowBtn').classList.add('enabled');
+  }
+
+
+  function saveToHistory(totals, rate) {
+    const names = [];
+    for(let p=0;p<playerCount;p++) names.push(getName(p)||('P'+(p+1)));
+    const record = {
+      date: document.getElementById('roundDate').value || new Date().toISOString().slice(0,10),
+      course: document.getElementById('courseName').value || '',
+      mode: mode,
+      rate: rate,
+      players: names.slice(0,playerCount).map((n,i)=>({
+        name:n, pts:totals[i], yen:Math.round(totals[i]*rate)
+      })),
+      savedAt: Date.now()
+    };
+    let hist = JSON.parse(localStorage.getItem('golfHistory')||'[]');
+    // 同じ日付・コースの重複を上書き
+    const dupIdx = hist.findIndex(r=>r.date===record.date&&r.course===record.course);
+    if(dupIdx>=0) hist[dupIdx]=record; else hist.unshift(record);
+    if(hist.length>50) hist=hist.slice(0,50);
+    localStorage.setItem('golfHistory', JSON.stringify(hist));
+  }
+
+  function renderHistory() {
+    const list = document.getElementById('historyList');
+    const hist = JSON.parse(localStorage.getItem('golfHistory')||'[]');
+    if(hist.length===0){
+      list.innerHTML='<div class="hist-empty">履歴がありません</div>'; return;
+    }
+    list.innerHTML = hist.map((r,i)=>{
+      const playersHtml = r.players.map(p=>{
+        const cls=p.pts>0?'pos':p.pts<0?'neg':'zero';
+        const sign=p.pts>0?'+':'';
+        const yenSign=p.yen>0?'+':'';
+        return `<div class="hist-player">
+          <div class="hist-pname">${p.name}</div>
+          <div class="hist-pts ${cls}">${sign}${p.pts}点</div>
+          ${r.rate>0?`<div class="hist-yen">${yenSign}${p.yen.toLocaleString()}円</div>`:''}
+        </div>`;
+      }).join('');
+      const modeLabel={vegas:'🎰ラスベガス',olympic:'🏅オリンピック',both:'⛳両方'}[r.mode]||r.mode;
+      return `<div class="hist-card">
+        <div class="hist-header">
+          <div>
+            <div class="hist-date">${r.date} ${r.course}</div>
+            <div class="hist-course">${modeLabel}</div>
+          </div>
+          <button class="hist-del" onclick="deleteHistory(${i})">🗑</button>
+        </div>
+        <div class="hist-players">${playersHtml}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function deleteHistory(idx) {
+    let hist = JSON.parse(localStorage.getItem('golfHistory')||'[]');
+    hist.splice(idx,1);
+    localStorage.setItem('golfHistory', JSON.stringify(hist));
+    renderHistory();
   }
 
   function goToSettings() {
@@ -881,15 +979,16 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     let s1=tscore(t1),s2=tscore(t2);
     const birdieMode=document.getElementById('vBirdie').value;
     if(birdieMode!=='off'){
-      const bp=document.getElementById('b_'+h)?.value;
-      if(bp!==''&&bp!=null){
-        const bpi=parseInt(bp);
-        if(bpi<playerCount&&getScore(h,bpi)!==null&&getScore(h,bpi)<getPar(h)){
-          if(birdieMode==='on'){
-            if(t1.includes(bpi)){const d=String(s2).padStart(2,'0');s2=parseInt(d[1]+d[0]);}
-            else{const d=String(s1).padStart(2,'0');s1=parseInt(d[1]+d[0]);}
-          }else if(birdieMode==='double'){if(t1.includes(bpi))s2*=2;else s1*=2;}
-        }
+      const par=getPar(h);
+      // スコアから自動検出: パー未満 = バーディー
+      const t1Birdie=t1.some(p=>scores[p]!==undefined&&scores[p]<par);
+      const t2Birdie=t2.some(p=>scores[p]!==undefined&&scores[p]<par);
+      if(birdieMode==='on'){
+        if(t1Birdie){const d=String(s2).padStart(2,'0');s2=parseInt(d[1]+d[0]);}
+        if(t2Birdie){const d=String(s1).padStart(2,'0');s1=parseInt(d[1]+d[0]);}
+      }else if(birdieMode==='double'){
+        if(t1Birdie) s2*=2;
+        if(t2Birdie) s1*=2;
       }
     }
     if(document.getElementById('vTrunc').value==='on'){s1=Math.floor(s1/10)*10;s2=Math.floor(s2/10)*10;}
@@ -960,6 +1059,9 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
       html+='</div>';
     });
     const el=document.getElementById('results'); if(el) el.innerHTML=html;
+    // 履歴に自動保存
+    const _rateVal=parseFloat(document.getElementById('rate').value)||0;
+    saveToHistory(totals, _rateVal);
     updateRoundSummary();
     updateHonorCells();
     updateTeeOrder();
