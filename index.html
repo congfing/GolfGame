@@ -274,24 +274,24 @@
         <label>ペアリング（ラウンド毎）</label>
         <div style="display:flex; gap:10px; flex-wrap:wrap;" id="pairRoundRow">
           <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
-            <span style="font-size:11px; color:#888;">R1・R4・R7…</span>
-            <select id="vPairR0" onchange="vegasPairings[0]=parseInt(this.value); rebuildHoles(); calculate();" style="font-size:12px;">
+            <span style="font-size:11px; color:#888;" id="pairLabel0"></span>
+            <select id="vPairR0" onchange="vegasPairings[0]=parseInt(this.value); rebuildHoles(); calculate(); updatePairLabels(); checkPairDuplicate();" style="font-size:12px;">
               <option value="0">AB vs CD</option>
               <option value="1">AC vs BD</option>
               <option value="2">AD vs BC</option>
             </select>
           </div>
           <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
-            <span style="font-size:11px; color:#888;">R2・R5・R8…</span>
-            <select id="vPairR1" onchange="vegasPairings[1]=parseInt(this.value); rebuildHoles(); calculate();" style="font-size:12px;">
+            <span style="font-size:11px; color:#888;" id="pairLabel1"></span>
+            <select id="vPairR1" onchange="vegasPairings[1]=parseInt(this.value); rebuildHoles(); calculate(); updatePairLabels(); checkPairDuplicate();" style="font-size:12px;">
               <option value="0">AB vs CD</option>
               <option value="1" selected>AC vs BD</option>
               <option value="2">AD vs BC</option>
             </select>
           </div>
           <div style="display:flex; flex-direction:column; gap:4px; align-items:center;">
-            <span style="font-size:11px; color:#888;">R3・R6・R9…</span>
-            <select id="vPairR2" onchange="vegasPairings[2]=parseInt(this.value); rebuildHoles(); calculate();" style="font-size:12px;">
+            <span style="font-size:11px; color:#888;" id="pairLabel2"></span>
+            <select id="vPairR2" onchange="vegasPairings[2]=parseInt(this.value); rebuildHoles(); calculate(); updatePairLabels(); checkPairDuplicate();" style="font-size:12px;">
               <option value="0">AB vs CD</option>
               <option value="1">AC vs BD</option>
               <option value="2" selected>AD vs BC</option>
@@ -299,6 +299,9 @@
           </div>
         </div>
         <div id="pairPreviewRow" style="font-size:11px; color:#888; margin-top:2px;"></div>
+        <div id="pairDupWarning" style="font-size:11px; color:#e24b4a; margin-top:4px; display:none;">
+          ⚠️ 同じ組み合わせが重複しています
+        </div>
       </div>
       <div class="opt-row">
         <label>10打以上</label>
@@ -472,18 +475,38 @@
   }
 
 
+  function getPairRoundLabel(ri) {
+    const hc = parseInt(document.getElementById('holeCount').value) || 18;
+    const holes = [];
+    for (let h = 0; h < hc; h++) {
+      if (h % 3 === ri) holes.push('H' + getDisplayHole(h));
+    }
+    return holes.join('・');
+  }
+
   function updatePairLabels() {
-    const labels = [
+    const pNames = [
       getName(0) + getName(1) + ' vs ' + getName(2) + getName(3),
       getName(0) + getName(2) + ' vs ' + getName(1) + getName(3),
       getName(0) + getName(3) + ' vs ' + getName(1) + getName(2),
     ];
     [0,1,2].forEach(ri => {
       const sel = document.getElementById('vPairR' + ri);
-      if (!sel) return;
-      sel.querySelectorAll('option').forEach((opt, oi) => { opt.textContent = labels[oi]; });
+      if (sel) sel.querySelectorAll('option').forEach((opt, oi) => { opt.textContent = pNames[oi]; });
+      const lbl = document.getElementById('pairLabel' + ri);
+      if (lbl) lbl.textContent = getPairRoundLabel(ri);
     });
     updatePairPreview();
+    checkPairDuplicate();
+  }
+
+  function checkPairDuplicate() {
+    const warn = document.getElementById('pairDupWarning');
+    if (!warn) return;
+    const hasDup = vegasPairings[0] === vegasPairings[1] ||
+                   vegasPairings[1] === vegasPairings[2] ||
+                   vegasPairings[0] === vegasPairings[2];
+    warn.style.display = hasDup ? '' : 'none';
   }
 
   function rebuildPlayers() {
