@@ -184,6 +184,35 @@
     flex: 1; min-width: 140px; padding: 5px 8px; font-size: 13px;
   }
   .course-preset-bar button { white-space: nowrap; }
+
+  /* 履歴 */
+  .hist-card {
+    background: #f5f5f0; border-radius: 8px; padding: 12px; margin-bottom: 8px;
+    border-left: 3px solid #1d9e75;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .hist-card-header {
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;
+  }
+  .hist-info { flex: 1; }
+  .hist-course { font-size: 14px; font-weight: 500; color: #2c2c2a; }
+  .hist-date { font-size: 12px; color: #888780; margin-top: 2px; }
+  .hist-del {
+    background: none; border: none; cursor: pointer; color: #bbb; font-size: 18px;
+    line-height: 1; padding: 0 4px; flex-shrink: 0;
+  }
+  .hist-del:hover { color: #e24b4a; }
+  .hist-players { display: flex; gap: 6px; flex-wrap: wrap; }
+  .hist-player {
+    background: #fff; border-radius: 6px; padding: 6px 10px;
+    font-size: 12px; text-align: center; min-width: 64px;
+    border: 1px solid #e8e6dd;
+  }
+  .hist-player-name { color: #5f5e5a; margin-bottom: 2px; }
+  .hist-player-pts { font-size: 17px; font-weight: 500; }
+  .hist-player-money { font-size: 11px; color: #888780; margin-top: 1px; }
+  .hist-empty { color: #888780; font-size: 13px; text-align: center; padding: 20px; }
+  .hist-toggle { font-size: 12px; cursor: pointer; color: #1d9e75; user-select: none; }
 </style>
 </head>
 <body>
@@ -408,6 +437,14 @@
   <div class="card">
     <h2>結果</h2>
     <div id="results" class="result-grid"></div>
+  </div>
+
+  <div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+      <h2 style="margin:0;">📋 プレイ履歴</h2>
+      <span class="hist-toggle" onclick="toggleHistory()">▲ 折りたたむ</span>
+    </div>
+    <div id="historyList"></div>
   </div>
 </div>
 
@@ -916,6 +953,7 @@
     }
     results.innerHTML = html;
     updateTeeOrder();
+    saveToHistory(totals, rate);
   }
 
   function clearAll() {
@@ -948,7 +986,6 @@
       },
       options: {
         rate: document.getElementById('rate').value,
-        vPair: document.getElementById('vPair').value,
         vCap: document.getElementById('vCap').value,
         vBirdie: document.getElementById('vBirdie').value,
         vTrunc: document.getElementById('vTrunc').value,
@@ -956,7 +993,8 @@
         oDiamond: document.getElementById('oDiamond').value,
         oGuzu: document.getElementById('oGuzu').value,
         oThreePutt: document.getElementById('oThreePutt').value,
-      }
+      },
+      vegasPairings: vegasPairings.slice()
     };
     for (let p = 0; p < playerCount; p++) {
       data.names.push(document.getElementById('pname' + p)?.value || defaultNames[p]);
@@ -1030,6 +1068,13 @@
             Object.keys(data.options).forEach(k => {
               const el = document.getElementById(k);
               if (el) el.value = data.options[k];
+            });
+          }
+          if (data.vegasPairings && Array.isArray(data.vegasPairings)) {
+            data.vegasPairings.forEach((v, i) => {
+              vegasPairings[i] = v;
+              const sel = document.getElementById('vPairR' + i);
+              if (sel) sel.value = v;
             });
           }
 
@@ -1179,10 +1224,141 @@
     renderCoursePresetSelect();
   }
 
+  // ── プレイ履歴 ──
+  const HISTORY_KEY = 'golfHistory';
+  const HISTORY_MAX = 50;
+  let historyOpen = true;
+
+  function getHistory() {
+    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
+  }
+  function saveHistory(list) {
+    localStorage.setItem(HISTORY_KEY, JSON.stringify(list));
+  }
+
+  function saveToHistory(totals, rate) {
+    // スコアが1つ以上入力されている場合のみ保存
+    let hasScore = false;
+    for (let h = 0; h < holeCount && !hasScore; h++) {
+      for (let p = 0; p < playerCount && !hasScore; p++) {
+        if (document.getElementById('s_' + h + '_' + p)?.value) hasScore = true;
+      }
+    }
+    if (!hasScore) return;
+
+    const courseName = document.getElementById('courseName').value.trim();
+    const courseSub = document.getElementById('courseSubName').value.trim();
+    const date = document.getElementById('roundDate').value;
+    const weather = selectedWeather;
+    const time = document.getElementById('roundTime').value;
+
+    const players = [];
+    for (let p = 0; p < playerCount; p++) {
+      const t = totals[p];
+      players.push({
+        name: getName(p),
+        total: t,
+        money: rate > 0 ? Math.round(t * rate) : null
+      });
+    }
+
+    const record = {
+      savedAt: new Date().toISOString(),
+      date, courseName, courseSub, weather, time, mode, rate,
+      players
+    };
+
+    const list = getHistory();
+    // 同日・同コース(サブ名含む)は上書き
+    const dupIdx = list.findIndex(r =>
+      r.date === date &&
+      r.courseName === courseName &&
+      r.courseSub === courseSub
+    );
+    if (dupIdx >= 0) {
+      list[dupIdx] = record;
+    } else {
+      list.unshift(record);
+      if (list.length > HISTORY_MAX) list.splice(HISTORY_MAX);
+    }
+    saveHistory(list);
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const el = document.getElementById('historyList');
+    if (!el) return;
+    if (!historyOpen) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+
+    const list = getHistory();
+    if (list.length === 0) {
+      el.innerHTML = '<div class="hist-empty">まだ履歴はありません。スコアを入力すると自動的に保存されます。</div>';
+      return;
+    }
+
+    let html = '';
+    list.forEach((r, idx) => {
+      const dateStr = r.date ? (() => {
+        const d = new Date(r.date);
+        const days = ['日','月','火','水','木','金','土'];
+        return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日(${days[d.getDay()]})`;
+      })() : '';
+      const subStr = r.courseSub ? ' / ' + r.courseSub : '';
+      const weatherStr = r.weather ? ' ' + r.weather : '';
+      const modeStr = r.mode === 'both' ? 'ラスベガス＆オリンピック' : r.mode === 'vegas' ? 'ラスベガス' : 'オリンピック';
+
+      html += `<div class="hist-card">`;
+      html += `<div class="hist-card-header">`;
+      html += `<div class="hist-info">`;
+      html += `<div class="hist-course">${r.courseName || '(コース名なし)'}${subStr}</div>`;
+      html += `<div class="hist-date">${dateStr}${weatherStr}　${modeStr}　${r.rate > 0 ? r.rate + '円/点' : ''}</div>`;
+      html += `</div>`;
+      html += `<button class="hist-del" onclick="deleteHistory(${idx})" title="削除">✕</button>`;
+      html += `</div>`;
+
+      html += `<div class="hist-players">`;
+      (r.players || []).forEach(p => {
+        const cls = p.total > 0 ? 'positive' : p.total < 0 ? 'negative' : '';
+        const sign = p.total > 0 ? '+' : '';
+        html += `<div class="hist-player">`;
+        html += `<div class="hist-player-name">${p.name}</div>`;
+        html += `<div class="hist-player-pts ${cls}">${sign}${p.total}<span style="font-size:10px;">点</span></div>`;
+        if (p.money !== null && p.money !== undefined) {
+          const mSign = p.money > 0 ? '+' : '';
+          html += `<div class="hist-player-money">${mSign}${p.money.toLocaleString()}円</div>`;
+        }
+        html += `</div>`;
+      });
+      html += `</div>`;
+      html += `</div>`;
+    });
+    el.innerHTML = html;
+  }
+
+  function deleteHistory(idx) {
+    const list = getHistory();
+    const r = list[idx];
+    if (!r) return;
+    const label = (r.courseName || '(コース名なし)') + (r.date ? ' ' + r.date : '');
+    if (!confirm('"' + label + '" の履歴を削除しますか？')) return;
+    list.splice(idx, 1);
+    saveHistory(list);
+    renderHistory();
+  }
+
+  function toggleHistory() {
+    historyOpen = !historyOpen;
+    const toggle = document.querySelector('.hist-toggle');
+    if (toggle) toggle.textContent = historyOpen ? '▲ 折りたたむ' : '▼ 展開する';
+    renderHistory();
+  }
+
   setDefaultDate();
   updateRoundSummary();
   rebuildAll();
   renderCoursePresetSelect();
+  renderHistory();
 </script>
 </body>
 </html>
