@@ -168,6 +168,13 @@
 
   /* ラウンド区切り */
   tr.round-sep td { border-top: 2px solid #1d9e75 !important; }
+
+  .order-badge {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    background: rgba(0,0,0,0.08); color: #555;
+    border-radius: 3px; padding: 1px 3px; margin-left: 2px;
+    vertical-align: middle; min-width: 12px; text-align: center;
+  }
 </style>
 </head>
 <body>
@@ -513,14 +520,25 @@
     playerCount = parseInt(document.getElementById('playerCount').value);
     document.getElementById('threePlayerHint').style.display = (playerCount === 3 && mode !== 'olympic') ? '' : 'none';
     const row = document.getElementById('playerNameRow');
-    row.innerHTML = '<label>名前</label>';
+    row.innerHTML = '<label>名前</label><label style="font-size:11px;color:#888;margin-left:8px;">打順</label>';
     for (let i = 0; i < playerCount; i++) {
+      const wrap = document.createElement('span');
+      wrap.style.cssText = 'display:inline-flex;align-items:center;gap:3px;margin-right:6px;';
       const inp = document.createElement('input');
       inp.type = 'text';
-      inp.value = defaultNames[i];
+      inp.value = defaultNames[i] || '';
       inp.id = 'pname' + i;
       inp.oninput = () => { rebuildHoles(); updatePairLabels(); };
-      row.appendChild(inp);
+      const ord = document.createElement('input');
+      ord.type = 'number';
+      ord.id = 'porder' + i;
+      ord.min = 1; ord.max = 4;
+      ord.value = i + 1;
+      ord.style.cssText = 'width:36px;font-size:12px;text-align:center;';
+      ord.oninput = () => { updateTeeOrder(); };
+      wrap.appendChild(inp);
+      wrap.appendChild(ord);
+      row.appendChild(wrap);
     }
     rebuildHoles();
   }
@@ -596,7 +614,7 @@
 
     let thead = '<thead><tr><th>H</th><th>Par</th>';
     for (let p = 0; p < playerCount; p++) {
-      thead += '<th>' + getName(p) + '<br><span style="font-size:10px;color:#888780;">打数</span></th>';
+      thead += '<th>' + getName(p) + '<br><span style="font-size:10px;color:#888780;">打数 打順</span></th>';
     }
     if (ghostPlayer) {
       thead += '<th style="color:#888780;">4人目<br><span style="font-size:10px;">Par+1</span></th>';
@@ -622,7 +640,7 @@
       for (let p = 0; p < playerCount; p++) {
         const sv = savedScores[h + '_' + p] || '';
         const _tc = _pd ? (_pd.t1.includes(p) ? 'team1-cell' : _pd.t2.includes(p) ? 'team2-cell' : '') : '';
-        tbody += '<td class="' + _tc + '"><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate()" /></td>';
+        tbody += '<td class="' + _tc + '"><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate()" /><span class="order-badge" id="ord_' + h + '_' + p + '"></span></td>';
       }
       if (ghostPlayer) {
         tbody += '<td class="ghost-col">' + (par + 1) + '</td>';
@@ -772,6 +790,47 @@
     return hasInput ? result : null;
   }
 
+
+  function getInitOrder() {
+    const order = [];
+    for (let p = 0; p < playerCount; p++) {
+      const v = document.getElementById('porder' + p)?.value;
+      order.push({ p, rank: v ? parseInt(v) : p + 1 });
+    }
+    return order.sort((a,b) => a.rank - b.rank).map(o => o.p);
+  }
+
+  function getTeeOrder(h) {
+    if (h === 0) return getInitOrder();
+    const prevH = h - 1;
+    const prevScores = [];
+    for (let p = 0; p < playerCount; p++) {
+      const v = document.getElementById('s_' + prevH + '_' + p)?.value;
+      prevScores.push({ p, score: v ? parseInt(v) : 999 });
+    }
+    const prevOrder = getTeeOrder(prevH);
+    // スコアでソート、同スコアは前ホールの打順を維持
+    prevScores.sort((a, b) => {
+      if (a.score !== b.score) return a.score - b.score;
+      return prevOrder.indexOf(a.p) - prevOrder.indexOf(b.p);
+    });
+    return prevScores.map(o => o.p);
+  }
+
+  function updateTeeOrder() {
+    const hc = parseInt(document.getElementById('holeCount').value) || 18;
+    for (let h = 0; h < hc; h++) {
+      const order = getTeeOrder(h);
+      for (let p = 0; p < playerCount; p++) {
+        const badge = document.getElementById('ord_' + h + '_' + p);
+        if (badge) {
+          const rank = order.indexOf(p);
+          badge.textContent = rank >= 0 ? (rank + 1) : '';
+        }
+      }
+    }
+  }
+
   function calculate() {
     const vegasTotals = new Array(playerCount).fill(0);
     const olympicRawTotals = new Array(playerCount).fill(0);
@@ -839,6 +898,7 @@
       html += '</div>';
     }
     results.innerHTML = html;
+    updateTeeOrder();
   }
 
   function clearAll() {
