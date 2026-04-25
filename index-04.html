@@ -358,6 +358,24 @@ tr.round-sep td {
     background:none; border:1px solid rgba(0,0,0,0.15); border-radius:20px;
     padding:6px 14px; font-size:12px; color:#555; cursor:pointer;
   }
+
+  .course-preset-bar {
+    display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px;
+    padding-top: 10px; border-top: 1px solid rgba(0,0,0,0.1);
+  }
+  .course-preset-bar select {
+    flex: 1; min-width: 140px; padding: 5px 8px; font-size: 13px;
+    background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.18);
+    border-radius: 8px; color: #111;
+  }
+  .course-preset-bar button {
+    white-space: nowrap; padding: 6px 12px;
+    background: rgba(29,158,117,0.08); border: 1px solid rgba(29,158,117,0.3);
+    border-radius: 8px; font-size: 12px; cursor: pointer; color: #1d9e75;
+  }
+  .course-preset-bar button.del-btn {
+    background: rgba(226,75,74,0.08); border-color: rgba(226,75,74,0.3); color: #e24b4a;
+  }
 </style>
 </head>
 <body>
@@ -461,6 +479,14 @@ tr.round-sep td {
         <button class="preset-btn" onclick="applyParPreset('all4')">全Par4</button>
         <button class="preset-btn" onclick="applyParPreset('all3')">全Par3</button>
         <button class="preset-btn" onclick="applyParPreset('all5')">全Par5</button>
+      </div>
+      <div class="course-preset-bar">
+        <label style="font-size:12px;color:#5f5e5a;white-space:nowrap;">コースプリセット</label>
+        <select id="coursePresetSelect" onchange="loadCoursePreset(this.value)">
+          <option value="">── 選択して読み込む ──</option>
+        </select>
+        <button onclick="saveCoursePreset()">&#x1F4BE; 保存</button>
+        <button class="del-btn" onclick="deleteCoursePreset()">&#x1F5D1; 削除</button>
       </div>
     </div>
     <div id="vegasOptSection">
@@ -1189,10 +1215,57 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     input.click();
   }
 
+
+  function getCoursePresets() { return JSON.parse(localStorage.getItem('golfCoursePresets') || '[]'); }
+  function saveCoursePresets(presets) { localStorage.setItem('golfCoursePresets', JSON.stringify(presets)); }
+  function renderCoursePresetSelect() {
+    var sel = document.getElementById('coursePresetSelect'); if (!sel) return;
+    var presets = getCoursePresets();
+    sel.innerHTML = '<option value="">── 選択して読み込む ──</option>';
+    presets.forEach(function(p, i) {
+      var opt = document.createElement('option'); opt.value = i;
+      opt.textContent = p.name + (p.holes === 9 ? '（9H）' : '（18H）'); sel.appendChild(opt);
+    });
+  }
+  function saveCoursePreset() {
+    var courseName = (document.getElementById('courseName') ? document.getElementById('courseName').value : '').trim();
+    var hc = parseInt(document.getElementById('holeCount').value);
+    var presetName = prompt('プリセット名を入力してください:', courseName || '新しいコース');
+    if (!presetName) return;
+    var pars = {};
+    for (var h = 0; h < hc; h++) { var el = document.getElementById('par_' + h); if (el) pars[h] = el.value; }
+    var preset = { name: presetName, courseName: courseName, holes: hc, pars: pars };
+    var presets = getCoursePresets();
+    var dupIdx = presets.findIndex(function(p) { return p.name === presetName; });
+    if (dupIdx >= 0) { if (!confirm('"' + presetName + '" は既に存在します。上書きしますか？')) return; presets[dupIdx] = preset; }
+    else { presets.push(preset); }
+    saveCoursePresets(presets); renderCoursePresetSelect();
+    var sel2 = document.getElementById('coursePresetSelect');
+    if (sel2) sel2.value = dupIdx >= 0 ? dupIdx : presets.length - 1;
+    alert('「' + presetName + '」を保存しました。');
+  }
+  function loadCoursePreset(idxStr) {
+    if (idxStr === '') return;
+    var presets = getCoursePresets(); var preset = presets[parseInt(idxStr)]; if (!preset) return;
+    var cnEl = document.getElementById('courseName'); if (cnEl) cnEl.value = preset.courseName || '';
+    var hcEl = document.getElementById('holeCount');
+    if (hcEl && preset.holes) { hcEl.value = preset.holes; holeCount = preset.holes; rebuildParPanel(); }
+    if (preset.pars) { Object.keys(preset.pars).forEach(function(h) { var el = document.getElementById('par_' + h); if (el) el.value = preset.pars[h]; }); }
+    updateRoundSummary(); rebuildHoles(); calculate();
+  }
+  function deleteCoursePreset() {
+    var sel = document.getElementById('coursePresetSelect');
+    if (!sel || sel.value === '') { alert('削除するプリセットを選択してください。'); return; }
+    var presets = getCoursePresets(); var preset = presets[parseInt(sel.value)]; if (!preset) return;
+    if (!confirm('"' + preset.name + '" を削除しますか？')) return;
+    presets.splice(parseInt(sel.value), 1); saveCoursePresets(presets); renderCoursePresetSelect();
+  }
+
   (function init(){
     const today=new Date();
     document.getElementById('roundDate').value=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
     updateRoundSummary();
+    renderCoursePresetSelect();
   })();
 </script>
 
