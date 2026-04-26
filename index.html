@@ -243,6 +243,22 @@
     .round-info { grid-template-columns: repeat(2, 1fr); }
   }
 
+  /* スコアOKフィードバック */
+  @keyframes cellFlash {
+    0%   { background: rgba(29,158,117,0); }
+    25%  { background: rgba(29,158,117,0.22); }
+    100% { background: rgba(29,158,117,0); }
+  }
+  .score-ok-flash { animation: cellFlash 0.55s ease-out; }
+  .score-ok-badge {
+    position: fixed; background: #1d9e75; color: #fff;
+    font-size: 13px; font-weight: 700; padding: 4px 10px;
+    border-radius: 8px; pointer-events: none; z-index: 9999;
+    opacity: 0; transform: translateY(0); transition: opacity 0.12s, transform 0.12s;
+    box-shadow: 0 2px 8px rgba(29,158,117,0.35);
+  }
+  .score-ok-badge.show { opacity: 1; transform: translateY(-4px); }
+
   /* 入力切替タブ */
   .input-switcher { display: flex; gap: 4px; }
   .input-sw-btn {
@@ -747,7 +763,7 @@
       for (let p = 0; p < playerCount; p++) {
         const sv = savedScores[h + '_' + p] || '';
         const _tc = _pd ? (_pd.t1.includes(p) ? 'team1-cell' : _pd.t2.includes(p) ? 'team2-cell' : '') : '';
-        tbody += '<td class="' + _tc + '"><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate()" /><span class="order-badge" id="ord_' + h + '_' + p + '"></span></td>';
+        tbody += '<td class="' + _tc + '"><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate(); showScoreOK(this)" /><span class="order-badge" id="ord_' + h + '_' + p + '"></span></td>';
       }
       if (ghostPlayer) {
         tbody += '<td class="ghost-col">' + (par + 1) + '</td>';
@@ -827,7 +843,7 @@
         metals.forEach(function(m) {
           opts += '<option value="' + m[0] + '"' + (mv === m[0] ? ' selected' : '') + '>' + m[1] + '</option>';
         });
-        tbody += '<td class="' + cls + '"><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select></td>';
+        tbody += '<td class="' + cls + '"><span class="order-badge" id="oord_' + h + '_' + p + '" style="display:block;margin-bottom:2px;"></span><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select></td>';
       }
       tbody += '</tr>';
       if (holeCount === 18 && h === 8) {
@@ -1021,11 +1037,12 @@
     for (let h = 0; h < hc; h++) {
       const order = getTeeOrder(h);
       for (let p = 0; p < playerCount; p++) {
+        const rank = order.indexOf(p);
+        const txt = rank >= 0 ? (rank + 1) : '';
         const badge = document.getElementById('ord_' + h + '_' + p);
-        if (badge) {
-          const rank = order.indexOf(p);
-          badge.textContent = rank >= 0 ? (rank + 1) : '';
-        }
+        if (badge) badge.textContent = txt;
+        const obadge = document.getElementById('oord_' + h + '_' + p);
+        if (obadge) obadge.textContent = txt;
       }
     }
   }
@@ -1534,19 +1551,44 @@
       const parEl = document.getElementById('spar-' + id);
       if (parEl) parEl.textContent = parSum;
 
-      // スコア合計
+      // スコア合計（入力済みホールのみ加算）
       for (let p = 0; p < playerCount; p++) {
-        let sum = 0, hasAll = true;
+        let sum = 0, hasAny = false;
         for (let h = start; h < end; h++) {
           const v = getScore(h, p);
-          if (v === null) { hasAll = false; break; }
-          sum += v;
+          if (v !== null) { sum += v; hasAny = true; }
         }
         const el = document.getElementById('sscore-' + id + '-' + p);
-        if (el) el.textContent = hasAll ? sum : '-';
+        if (el) el.textContent = hasAny ? sum : '-';
       }
     });
   }
+
+  // ── スコアOKフィードバック ──
+  (function() {
+    const badge = document.createElement('div');
+    badge.className = 'score-ok-badge';
+    badge.textContent = '✓ OK';
+    document.body.appendChild(badge);
+    let timer = null;
+    window.showScoreOK = function(input) {
+      const v = parseInt(input.value);
+      if (!v || v <= 0) return;
+      const rect = input.getBoundingClientRect();
+      badge.style.left = Math.min(rect.right + 6, window.innerWidth - 70) + 'px';
+      badge.style.top  = (rect.top + rect.height / 2 - 14) + 'px';
+      badge.classList.add('show');
+      const td = input.closest('td');
+      if (td) {
+        td.classList.remove('score-ok-flash');
+        void td.offsetWidth;
+        td.classList.add('score-ok-flash');
+        td.addEventListener('animationend', () => td.classList.remove('score-ok-flash'), { once: true });
+      }
+      clearTimeout(timer);
+      timer = setTimeout(() => badge.classList.remove('show'), 750);
+    };
+  })();
 
   setDefaultDate();
   updateRoundSummary();
