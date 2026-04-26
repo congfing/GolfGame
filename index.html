@@ -13,6 +13,7 @@
     margin: 0;
     padding: 16px;
     font-size: 14px;
+    overflow-x: hidden;
   }
   .container { max-width: 1100px; margin: 0 auto; }
   h1 { font-size: 20px; margin: 0 0 16px; font-weight: 500; }
@@ -213,6 +214,34 @@
   .hist-player-money { font-size: 11px; color: #888780; margin-top: 1px; }
   .hist-empty { color: #888780; font-size: 13px; text-align: center; padding: 20px; }
   .hist-toggle { font-size: 12px; cursor: pointer; color: #1d9e75; user-select: none; }
+
+  /* 合計行 */
+  .subtotal-row td {
+    background: #e4f4ed !important; font-weight: 600;
+    border-top: 2px solid #1d9e75 !important;
+  }
+  .total-row td {
+    background: #c2e8d6 !important; font-weight: 700;
+    border-top: 2px solid #0f6e56 !important;
+  }
+  .subtotal-row .hole-num, .total-row .hole-num {
+    color: #0f6e56; font-size: 12px; white-space: nowrap;
+  }
+
+  /* スマホ対応 */
+  @media (max-width: 480px) {
+    table.scores { font-size: 11px; min-width: 320px; }
+    table.scores th, table.scores td { padding: 2px 1px; }
+    table.scores input[type="number"] {
+      min-width: 30px; width: 30px; font-size: 11px; padding: 2px 1px;
+    }
+    table.scores select { min-width: 40px; font-size: 10px; padding: 1px; }
+    .result-grid { grid-template-columns: repeat(2, 1fr); }
+    .result-total { font-size: 20px; }
+    .order-badge { display: none; }
+    .opt-grid { grid-template-columns: 1fr; }
+    .round-info { grid-template-columns: repeat(2, 1fr); }
+  }
 </style>
 </head>
 <body>
@@ -719,6 +748,18 @@
         }
       }
       tbody += '</tr>';
+
+      // 前半合計行（18Hの9ホール目の後）
+      if (holeCount === 18 && h === 8) {
+        tbody += buildSubRow('half1', '前半', showVegas, showOlympic, ghostPlayer, false);
+      }
+    }
+    // 後半合計 / 合計
+    if (holeCount === 18) {
+      tbody += buildSubRow('half2', '後半', showVegas, showOlympic, ghostPlayer, false);
+      tbody += buildSubRow('total', '合計', showVegas, showOlympic, ghostPlayer, true);
+    } else {
+      tbody += buildSubRow('total', '合計', showVegas, showOlympic, ghostPlayer, true);
     }
     tbody += '</tbody>';
     table.innerHTML = thead + tbody;
@@ -953,6 +994,7 @@
     }
     results.innerHTML = html;
     updateTeeOrder();
+    updateSubtotals();
     saveToHistory(totals, rate);
   }
 
@@ -1352,6 +1394,53 @@
     const toggle = document.querySelector('.hist-toggle');
     if (toggle) toggle.textContent = historyOpen ? '▲ 折りたたむ' : '▼ 展開する';
     renderHistory();
+  }
+
+  // ── 合計行 ──
+  function buildSubRow(id, label, showVegas, showOlympic, ghostPlayer, isTotal) {
+    const cls = isTotal ? 'total-row' : 'subtotal-row';
+    let row = '<tr class="' + cls + '">';
+    row += '<td class="hole-num">' + label + '</td>';
+    row += '<td class="par-col" id="spar-' + id + '">-</td>';
+    for (let p = 0; p < playerCount; p++) {
+      row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;">-</td>';
+    }
+    if (ghostPlayer) row += '<td class="ghost-col">-</td>';
+    if (showVegas) row += '<td class="vscore-col" id="svegas-' + id + '">-</td>';
+    if (showOlympic) {
+      for (let p = 0; p < playerCount; p++) row += '<td>-</td>';
+    }
+    row += '</tr>';
+    return row;
+  }
+
+  function updateSubtotals() {
+    const ranges = [];
+    if (holeCount === 18) {
+      ranges.push({ id: 'half1', start: 0, end: 9 });
+      ranges.push({ id: 'half2', start: 9, end: 18 });
+    }
+    ranges.push({ id: 'total', start: 0, end: holeCount });
+
+    ranges.forEach(({ id, start, end }) => {
+      // Par合計
+      let parSum = 0;
+      for (let h = start; h < end; h++) parSum += getPar(h);
+      const parEl = document.getElementById('spar-' + id);
+      if (parEl) parEl.textContent = parSum;
+
+      // スコア合計
+      for (let p = 0; p < playerCount; p++) {
+        let sum = 0, hasAll = true;
+        for (let h = start; h < end; h++) {
+          const v = getScore(h, p);
+          if (v === null) { hasAll = false; break; }
+          sum += v;
+        }
+        const el = document.getElementById('sscore-' + id + '-' + p);
+        if (el) el.textContent = hasAll ? sum : '-';
+      }
+    });
   }
 
   setDefaultDate();
