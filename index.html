@@ -238,7 +238,7 @@
     table.scores select { min-width: 40px; font-size: 10px; padding: 1px; }
     .result-grid { grid-template-columns: repeat(2, 1fr); }
     .result-total { font-size: 20px; }
-    .order-badge { display: none; }
+    .order-badge { display: inline-block; font-size: 8px; padding: 1px 2px; }
     .opt-grid { grid-template-columns: 1fr; }
     .round-info { grid-template-columns: repeat(2, 1fr); }
   }
@@ -250,14 +250,6 @@
     100% { background: rgba(29,158,117,0); }
   }
   .score-ok-flash { animation: cellFlash 0.55s ease-out; }
-  .score-ok-badge {
-    position: fixed; background: #1d9e75; color: #fff;
-    font-size: 13px; font-weight: 700; padding: 4px 10px;
-    border-radius: 8px; pointer-events: none; z-index: 9999;
-    opacity: 0; transform: translateY(0); transition: opacity 0.12s, transform 0.12s;
-    box-shadow: 0 2px 8px rgba(29,158,117,0.35);
-  }
-  .score-ok-badge.show { opacity: 1; transform: translateY(-4px); }
 
   /* 入力切替タブ */
   .input-switcher { display: flex; gap: 4px; }
@@ -1564,31 +1556,18 @@
     });
   }
 
-  // ── スコアOKフィードバック ──
-  (function() {
-    const badge = document.createElement('div');
-    badge.className = 'score-ok-badge';
-    badge.textContent = '✓ OK';
-    document.body.appendChild(badge);
-    let timer = null;
-    window.showScoreOK = function(input) {
-      const v = parseInt(input.value);
-      if (!v || v <= 0) return;
-      const rect = input.getBoundingClientRect();
-      badge.style.left = Math.min(rect.right + 6, window.innerWidth - 70) + 'px';
-      badge.style.top  = (rect.top + rect.height / 2 - 14) + 'px';
-      badge.classList.add('show');
-      const td = input.closest('td');
-      if (td) {
-        td.classList.remove('score-ok-flash');
-        void td.offsetWidth;
-        td.classList.add('score-ok-flash');
-        td.addEventListener('animationend', () => td.classList.remove('score-ok-flash'), { once: true });
-      }
-      clearTimeout(timer);
-      timer = setTimeout(() => badge.classList.remove('show'), 750);
-    };
-  })();
+  // ── スコアOKフィードバック（フラッシュのみ）──
+  window.showScoreOK = function(input) {
+    const v = parseInt(input.value);
+    if (!v || v <= 0) return;
+    const td = input.closest('td');
+    if (td) {
+      td.classList.remove('score-ok-flash');
+      void td.offsetWidth;
+      td.classList.add('score-ok-flash');
+      td.addEventListener('animationend', () => td.classList.remove('score-ok-flash'), { once: true });
+    }
+  };
 
   setDefaultDate();
   updateRoundSummary();
