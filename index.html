@@ -242,6 +242,16 @@
     .opt-grid { grid-template-columns: 1fr; }
     .round-info { grid-template-columns: repeat(2, 1fr); }
   }
+
+  /* 入力切替タブ */
+  .input-switcher { display: flex; gap: 4px; }
+  .input-sw-btn {
+    padding: 5px 14px; border: 1px solid #d3d1c7; border-radius: 6px;
+    background: #fff; cursor: pointer; font-size: 12px; font-weight: 500;
+    transition: background 0.15s;
+  }
+  .input-sw-btn.active { background: #1d9e75; color: #fff; border-color: #1d9e75; }
+  .input-sw-btn:hover:not(.active) { background: #f5f5f0; }
 </style>
 </head>
 <body>
@@ -457,9 +467,18 @@
   </div>
 
   <div class="card">
-    <h2>スコア入力</h2>
-    <div class="hole-wrapper">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
+      <h2 style="margin:0;">スコア入力</h2>
+      <div id="inputSwitcher" class="input-switcher">
+        <button class="input-sw-btn active" id="btnViewScores" onclick="setInputView('scores')">🏌️ 打数</button>
+        <button class="input-sw-btn" id="btnViewOlympic" onclick="setInputView('olympic')">🏅 オリンピック</button>
+      </div>
+    </div>
+    <div id="scorePanel" class="hole-wrapper">
       <table class="scores" id="scoreTable"></table>
+    </div>
+    <div id="olympicPanel" class="hole-wrapper hidden">
+      <table class="scores" id="olympicTable"></table>
     </div>
   </div>
 
@@ -479,6 +498,7 @@
 
 <script>
   let mode = 'both';
+  let inputView = 'scores';
   let startHole = 1;
   const PAIR_DEFS = [
     {t1:[0,1], t2:[2,3], label:'AB vs CD'},
@@ -547,6 +567,18 @@
     if (m === 'vegas' && playerCount !== 4 && playerCount !== 3) {
       document.getElementById('playerCount').value = '4';
       playerCount = 4;
+    }
+    // 入力パネル切替
+    const _sw = document.getElementById('inputSwitcher');
+    if (m === 'vegas') {
+      if (_sw) _sw.classList.add('hidden');
+      setInputView('scores');
+    } else if (m === 'olympic') {
+      if (_sw) _sw.classList.add('hidden');
+      setInputView('olympic');
+    } else {
+      if (_sw) _sw.classList.remove('hidden');
+      setInputView('scores');
     }
     rebuildAll();
   }
@@ -676,14 +708,11 @@
 
     // 保存された値を退避
     const savedScores = {};
-    const savedMetals = {};
     const savedBirdies = {};
     for (let h = 0; h < 18; h++) {
       for (let p = 0; p < 4; p++) {
         const s = document.getElementById('s_' + h + '_' + p);
         if (s && s.value) savedScores[h + '_' + p] = s.value;
-        const m = document.getElementById('m_' + h + '_' + p);
-        if (m && m.value) savedMetals[h + '_' + p] = m.value;
       }
       const b = document.getElementById('b_' + h);
       if (b && b.value) savedBirdies[h] = b.value;
@@ -704,11 +733,6 @@
     }
 
     if (showVegas) thead += '<th class="vscore-col">得点</th>';
-    if (showOlympic) {
-      for (let p = 0; p < playerCount; p++) {
-        thead += '<th>' + getName(p) + '<br><span style="font-size:10px;color:#888780;">順位</span></th>';
-      }
-    }
     thead += '</tr></thead>';
 
     let tbody = '<tbody>';
@@ -732,37 +756,24 @@
       if (showVegas) {
         tbody += '<td class="vscore-col" id="vscore_' + h + '">-</td>';
       }
-      if (showOlympic) {
-        for (let p = 0; p < playerCount; p++) {
-          const mv = savedMetals[h + '_' + p] || '';
-          const cls = mv ? 'metal-' + mv : '';
-          let opts = '<option value="">-</option>';
-          const metals = [
-            ['G', '金 🥇'], ['S', '銀 🥈'], ['B', '銅 🥉'],
-            ['I', '鉄'], ['D', '💎'], ['X', '外し']
-          ];
-          metals.forEach(m => {
-            opts += '<option value="' + m[0] + '"' + (mv === m[0] ? ' selected' : '') + '>' + m[1] + '</option>';
-          });
-          tbody += '<td class="' + cls + '"><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select></td>';
-        }
-      }
+
       tbody += '</tr>';
 
       // 前半合計行（18Hの9ホール目の後）
       if (holeCount === 18 && h === 8) {
-        tbody += buildSubRow('half1', '前半', showVegas, showOlympic, ghostPlayer, false);
+        tbody += buildSubRow('half1', '前半', showVegas, false, ghostPlayer, false);
       }
     }
     // 後半合計 / 合計
     if (holeCount === 18) {
-      tbody += buildSubRow('half2', '後半', showVegas, showOlympic, ghostPlayer, false);
-      tbody += buildSubRow('total', '合計', showVegas, showOlympic, ghostPlayer, true);
+      tbody += buildSubRow('half2', '後半', showVegas, false, ghostPlayer, false);
+      tbody += buildSubRow('total', '合計', showVegas, false, ghostPlayer, true);
     } else {
-      tbody += buildSubRow('total', '合計', showVegas, showOlympic, ghostPlayer, true);
+      tbody += buildSubRow('total', '合計', showVegas, false, ghostPlayer, true);
     }
     tbody += '</tbody>';
     table.innerHTML = thead + tbody;
+    rebuildOlympicTable();
     calculate();
   }
 
@@ -782,6 +793,99 @@
     rebuildParPanel();
     rebuildPlayers();
     updatePairPreview();
+  }
+
+  function rebuildOlympicTable() {
+    if (mode === 'vegas') return;
+    const table = document.getElementById('olympicTable');
+    if (!table) return;
+
+    const savedMetals = {};
+    for (let h = 0; h < 18; h++) {
+      for (let p = 0; p < 4; p++) {
+        const m = document.getElementById('m_' + h + '_' + p);
+        if (m && m.value) savedMetals[h + '_' + p] = m.value;
+      }
+    }
+
+    const metals = [['G','金 🥇'],['S','銀 🥈'],['B','銅 🥉'],['I','鉄'],['D','💎'],['X','外し']];
+
+    let thead = '<thead><tr><th>H</th><th>Par</th>';
+    for (let p = 0; p < playerCount; p++) {
+      thead += '<th>' + getName(p) + '<br><span style="font-size:10px;color:#888780;">順位</span></th>';
+    }
+    thead += '</tr></thead>';
+
+    let tbody = '<tbody>';
+    for (let h = 0; h < holeCount; h++) {
+      tbody += '<tr><td class="hole-num">' + getDisplayHole(h) + '</td>';
+      tbody += '<td class="par-col">' + getPar(h) + '</td>';
+      for (let p = 0; p < playerCount; p++) {
+        const mv = savedMetals[h + '_' + p] || '';
+        const cls = mv ? 'metal-' + mv : '';
+        let opts = '<option value="">-</option>';
+        metals.forEach(function(m) {
+          opts += '<option value="' + m[0] + '"' + (mv === m[0] ? ' selected' : '') + '>' + m[1] + '</option>';
+        });
+        tbody += '<td class="' + cls + '"><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select></td>';
+      }
+      tbody += '</tr>';
+      if (holeCount === 18 && h === 8) {
+        tbody += '<tr class="subtotal-row"><td class="hole-num">前半</td><td class="par-col" id="opar-half1">-</td>';
+        for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-half1-' + p + '">-</td>';
+        tbody += '</tr>';
+      }
+    }
+    if (holeCount === 18) {
+      tbody += '<tr class="subtotal-row"><td class="hole-num">後半</td><td class="par-col" id="opar-half2">-</td>';
+      for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-half2-' + p + '">-</td>';
+      tbody += '</tr>';
+    }
+    tbody += '<tr class="total-row"><td class="hole-num">合計</td><td class="par-col" id="opar-total">-</td>';
+    for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-total-' + p + '">-</td>';
+    tbody += '</tr>';
+    tbody += '</tbody>';
+    table.innerHTML = thead + tbody;
+  }
+
+  function setInputView(view) {
+    inputView = view;
+    const sp = document.getElementById('scorePanel');
+    const op = document.getElementById('olympicPanel');
+    if (sp) sp.classList.toggle('hidden', view !== 'scores');
+    if (op) op.classList.toggle('hidden', view !== 'olympic');
+    const bs = document.getElementById('btnViewScores');
+    const bo = document.getElementById('btnViewOlympic');
+    if (bs) bs.classList.toggle('active', view === 'scores');
+    if (bo) bo.classList.toggle('active', view === 'olympic');
+  }
+
+  function updateOlympicSubtotals() {
+    if (mode === 'vegas') return;
+    const ranges = [];
+    if (holeCount === 18) {
+      ranges.push({ id: 'half1', start: 0, end: 9 });
+      ranges.push({ id: 'half2', start: 9, end: 18 });
+    }
+    ranges.push({ id: 'total', start: 0, end: holeCount });
+    ranges.forEach(({ id, start, end }) => {
+      let parSum = 0;
+      for (let h = start; h < end; h++) parSum += getPar(h);
+      const parEl = document.getElementById('opar-' + id);
+      if (parEl) parEl.textContent = parSum;
+      for (let p = 0; p < playerCount; p++) {
+        let sum = 0, hasAny = false;
+        for (let h = start; h < end; h++) {
+          const r = calcOlympicHole(h);
+          if (r) { sum += r[p]; hasAny = true; }
+        }
+        const el = document.getElementById('osub-' + id + '-' + p);
+        if (el) {
+          if (!hasAny) { el.textContent = '-'; }
+          else { el.textContent = (sum > 0 ? '+' : '') + sum; el.style.color = sum > 0 ? '#1d9e75' : sum < 0 ? '#e24b4a' : ''; }
+        }
+      }
+    });
   }
 
   function updateMetalColor(h, p) {
@@ -995,6 +1099,7 @@
     results.innerHTML = html;
     updateTeeOrder();
     updateSubtotals();
+    updateOlympicSubtotals();
     saveToHistory(totals, rate);
   }
 
