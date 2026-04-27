@@ -177,6 +177,21 @@
     min-width: 12px; text-align: center;
   }
 
+  .special-btn {
+    display: inline-block; font-size: 9px; font-weight: 700;
+    border: 1px solid #ccc; border-radius: 3px; padding: 1px 4px;
+    background: #f0f0ec; cursor: pointer; margin-top: 2px; opacity: 0.45;
+    line-height: 1.4; vertical-align: middle;
+  }
+  .special-btn.kz-active {
+    opacity: 1; background: #fcebeb; color: #791f1f;
+    border-color: rgba(226,75,74,0.5);
+  }
+  .special-btn.si-active {
+    opacity: 1; background: #faeeda; color: #633806;
+    border-color: rgba(200,150,0,0.5);
+  }
+
   .course-preset-bar {
     display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 10px;
     padding-top: 10px; border-top: 1px solid #e8e6dd;
@@ -454,10 +469,17 @@
         </select>
       </div>
       <div class="opt-row">
-        <label>グズ鉄</label>
-        <select id="oGuzu" onchange="calculate()">
+        <label>クズ鉄</label>
+        <select id="oKuzu" onchange="rebuildHoles()">
           <option value="off">なし</option>
-          <option value="on">あり（鉄で外すと-1点）</option>
+          <option value="on">あり（ピン最接近で外すと-1点）</option>
+        </select>
+      </div>
+      <div class="opt-row">
+        <label>砂イチ</label>
+        <select id="oSana" onchange="rebuildHoles()">
+          <option value="off">なし</option>
+          <option value="on">あり（バンカーから1打オン→1パット+3点）</option>
         </select>
       </div>
       <div class="opt-row">
@@ -469,7 +491,7 @@
       </div>
     </div>
     <div class="hint">
-      ※ 各ホールで順位（金/銀/銅/鉄/💎/✕）を選択。✕は1パットで決められなかった場合。
+      ※ 各ホールで順位（金/銀/銅/鉄/💎/外し）を選択。クズ鉄・砂イチON時は各セルにボタンが表示されます。
       最終点数は「自分の点×人数 − 全員合計」で計算されます。
     </div>
   </div>
@@ -523,6 +545,8 @@
   let playerCount = 4;
   let holeCount = 18;
   let selectedWeather = '';
+  let kzState = {}; // クズ鉄: { 'h_p': true }
+  let siState = {}; // 砂イチ: { 'h_p': true }
   const defaultNames = ['後藤', '西山', 'りえ', ''];
 
   // 標準的なゴルフコースのパー構成（Par72）
@@ -841,7 +865,14 @@
         metals.forEach(function(m) {
           opts += '<option value="' + m[0] + '"' + (mv === m[0] ? ' selected' : '') + '>' + m[1] + '</option>';
         });
-        tbody += '<td class="' + cls + '"><span class="order-badge" id="oord_' + h + '_' + p + '" style="display:block;margin-bottom:2px;"></span><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select></td>';
+        const _kzOn = document.getElementById('oKuzu')?.value === 'on';
+        const _siOn = document.getElementById('oSana')?.value === 'on';
+        const _kzAct = kzState[h + '_' + p] ? ' kz-active' : '';
+        const _siAct = siState[h + '_' + p] ? ' si-active' : '';
+        let _extra = '';
+        if (_kzOn) _extra += '<button class="special-btn' + _kzAct + '" id="kzbtn_' + h + '_' + p + '" onclick="toggleKZ(' + h + ',' + p + ')" title="クズ鉄（-1点）">鉄</button>';
+        if (_siOn) _extra += '<button class="special-btn' + _siAct + '" id="sibtn_' + h + '_' + p + '" onclick="toggleSI(' + h + ',' + p + ')" title="砂イチ（+3点）">砂</button>';
+        tbody += '<td class="' + cls + '"><span class="order-badge" id="oord_' + h + '_' + p + '" style="display:block;margin-bottom:2px;"></span><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select>' + _extra + '</td>';
       }
       tbody += '</tr>';
       if (holeCount === 18 && h === 8) {
@@ -974,12 +1005,29 @@
     return result; // 4要素（3人プレー時は最後の要素が仮想4人目の得点、集計には含めない）
   }
 
+  function toggleKZ(h, p) {
+    const key = h + '_' + p;
+    kzState[key] = !kzState[key];
+    const btn = document.getElementById('kzbtn_' + h + '_' + p);
+    if (btn) btn.classList.toggle('kz-active', !!kzState[key]);
+    calculate();
+  }
+
+  function toggleSI(h, p) {
+    const key = h + '_' + p;
+    siState[key] = !siState[key];
+    const btn = document.getElementById('sibtn_' + h + '_' + p);
+    if (btn) btn.classList.toggle('si-active', !!siState[key]);
+    calculate();
+  }
+
   function calcOlympicHole(h) {
     const result = new Array(playerCount).fill(0);
     let hasInput = false;
     const goldPoint = parseInt(document.getElementById('oGold').value);
     const diamondPoint = parseInt(document.getElementById('oDiamond').value);
-    const guzuOn = document.getElementById('oGuzu').value === 'on';
+    const kuzuOn = document.getElementById('oKuzu')?.value === 'on';
+    const sanaOn = document.getElementById('oSana')?.value === 'on';
     const threePuttOn = document.getElementById('oThreePutt').value === 'on';
 
     const pts = { G: goldPoint, S: 3, B: 2, I: 1 };
@@ -991,7 +1039,6 @@
       if (m === 'D') result[p] += diamondPoint;
       else if (pts[m] !== undefined) result[p] += pts[m];
       else if (m === 'X') {
-        if (guzuOn) result[p] -= 1;
         if (threePuttOn) {
           const score = getScore(h, p);
           if (score !== null && score >= 3) {
@@ -999,6 +1046,10 @@
           }
         }
       }
+      // クズ鉄（ピン最接近で1パット外し → -1点）
+      if (kuzuOn && kzState[h + '_' + p]) result[p] -= 1;
+      // 砂イチ（バンカーから1打オン→1パット → +3点）
+      if (sanaOn && siState[h + '_' + p]) result[p] += 3;
     }
     return hasInput ? result : null;
   }
@@ -1163,10 +1214,13 @@
         vTrunc: document.getElementById('vTrunc').value,
         oGold: document.getElementById('oGold').value,
         oDiamond: document.getElementById('oDiamond').value,
-        oGuzu: document.getElementById('oGuzu').value,
+        oKuzu: document.getElementById('oKuzu')?.value || 'off',
+        oSana: document.getElementById('oSana')?.value || 'off',
         oThreePutt: document.getElementById('oThreePutt').value,
       },
-      vegasPairings: vegasPairings.slice()
+      vegasPairings: vegasPairings.slice(),
+      kzState: Object.assign({}, kzState),
+      siState: Object.assign({}, siState)
     };
     for (let p = 0; p < playerCount; p++) {
       data.names.push(document.getElementById('pname' + p)?.value || defaultNames[p]);
@@ -1249,6 +1303,8 @@
               if (sel) sel.value = v;
             });
           }
+          kzState = data.kzState ? Object.assign({}, data.kzState) : {};
+          siState = data.siState ? Object.assign({}, data.siState) : {};
 
           rebuildAll();
 
@@ -1450,10 +1506,13 @@
         vTrunc: document.getElementById('vTrunc').value,
         oGold: document.getElementById('oGold').value,
         oDiamond: document.getElementById('oDiamond').value,
-        oGuzu: document.getElementById('oGuzu').value,
+        oKuzu: document.getElementById('oKuzu')?.value || 'off',
+        oSana: document.getElementById('oSana')?.value || 'off',
         oThreePutt: document.getElementById('oThreePutt').value,
       },
-      vegasPairings: vegasPairings.slice()
+      vegasPairings: vegasPairings.slice(),
+      kzState: Object.assign({}, kzState),
+      siState: Object.assign({}, siState)
     };
     for (let p = 0; p < playerCount; p++) {
       fullData.names.push(document.getElementById('pname' + p)?.value || defaultNames[p]);
@@ -1616,6 +1675,8 @@
         if (sel) sel.value = v;
       });
     }
+    kzState = data.kzState ? Object.assign({}, data.kzState) : {};
+    siState = data.siState ? Object.assign({}, data.siState) : {};
     rebuildAll();
     setTimeout(() => {
       if (data.names) data.names.forEach((n, i) => {
