@@ -389,6 +389,35 @@ tr.round-sep td {
   .subtotal-row .h-col, .total-row .h-col {
     color: var(--green); font-size: 11px; white-space: nowrap;
   }
+  .special-btn {
+    display: block; font-size: 9px; font-weight: 700;
+    border: 1px solid #ccc; border-radius: 3px; padding: 1px 4px;
+    background: rgba(0,0,0,0.05); cursor: pointer; margin-top: 2px;
+    opacity: 0.4; line-height: 1.4; width: 100%;
+  }
+  .special-btn.kz-active {
+    opacity: 1; background: rgba(226,75,74,0.15); color: #c02020;
+    border-color: rgba(226,75,74,0.4);
+  }
+  .special-btn.si-active {
+    opacity: 1; background: rgba(212,160,23,0.18); color: #8a5200;
+    border-color: rgba(212,160,23,0.4);
+  }
+  /* 履歴復元セレクター */
+  .hist-restore-bar {
+    display: flex; gap: 8px; align-items: center; padding: 12px;
+    border-bottom: 1px solid rgba(0,0,0,0.07);
+  }
+  .hist-restore-bar select {
+    flex: 1; min-width: 160px; padding: 8px 10px; font-size: 13px;
+    background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.18);
+    border-radius: 8px; color: #111;
+  }
+  .hist-restore-bar button {
+    padding: 8px 14px; background: var(--green); color: #fff;
+    border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;
+    white-space: nowrap;
+  }
 </style>
 </head>
 <body>
@@ -558,9 +587,15 @@ tr.round-sep td {
           </select>
         </div>
         <div class="toggle-row">
-          <span class="toggle-label">グズ鉄</span>
-          <select id="oGuzu" class="toggle-sel" onchange="calculate()">
-            <option value="off">なし</option><option value="on">あり（鉄で外すと−1点）</option>
+          <span class="toggle-label">クズ鉄</span>
+          <select id="oKuzu" class="toggle-sel" onchange="rebuildOlympic(); calculate()">
+            <option value="off">なし</option><option value="on">あり（ピン最接近で外すと−1点）</option>
+          </select>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">砂イチ</span>
+          <select id="oSana" class="toggle-sel" onchange="rebuildOlympic(); calculate()">
+            <option value="off">なし</option><option value="on">あり（バンカー1打オン→1パット+3点）</option>
           </select>
         </div>
         <div class="toggle-row">
@@ -569,7 +604,7 @@ tr.round-sep td {
             <option value="off">なし</option><option value="on">あり</option>
           </select>
         </div>
-        <div class="hint">金/銀/銅/鉄/💎/外し を各ホールで入力。精算＝自分の点×人数−全員合計</div>
+        <div class="hint">金/銀/銅/鉄/💎/外し を各ホールで入力。クズ鉄・砂イチON時は各セルにボタンが表示されます。</div>
       </div>
     </div>
   </div>
@@ -623,6 +658,12 @@ tr.round-sep td {
     <div class="screen-title">履歴</div>
     <div></div>
   </div>
+  <div class="hist-restore-bar">
+    <select id="histDateSelect">
+      <option value="">── 日付を選択して復元 ──</option>
+    </select>
+    <button onclick="restoreFromDateSelect()">復元</button>
+  </div>
   <div class="screen-body" style="padding:0;">
     <div id="historyList" class="history-list"></div>
   </div>
@@ -643,6 +684,8 @@ tr.round-sep td {
 
 <script>
   let mode = 'both', playerCount = 4, holeCount = 18, startHole = 1, selectedWeather = '';
+  let kzState = {}; // クズ鉄: { 'h_p': true }
+  let siState = {}; // 砂イチ: { 'h_p': true }
   const defaultNames = ['後藤','西山','りえ',''];
   const STANDARD_PARS = [4,4,3,5,4,4,3,5,4,4,3,5,4,4,3,5,4,4];
   let selectedGame = null;
@@ -660,27 +703,115 @@ tr.round-sep td {
   function saveToHistory(totals, rate) {
     const names = [];
     for(let p=0;p<playerCount;p++) names.push(getName(p)||('P'+(p+1)));
-    const record = {
-      date: document.getElementById('roundDate').value || new Date().toISOString().slice(0,10),
-      course: document.getElementById('courseName').value || '',
-      mode: mode,
-      rate: rate,
-      players: names.slice(0,playerCount).map((n,i)=>({
-        name:n, pts:totals[i], yen:Math.round(totals[i]*rate)
-      })),
-      savedAt: Date.now()
+    const date = document.getElementById('roundDate').value || new Date().toISOString().slice(0,10);
+    const course = document.getElementById('courseName').value || '';
+    // フルデータ（復元用）
+    const fullData = {
+      mode, playerCount, holeCount,
+      names: names.slice(),
+      scores: {}, metals: {}, birdies: {}, pars: {},
+      round: { course, date, weather: selectedWeather, memo: document.getElementById('roundMemo').value },
+      options: {
+        rate: document.getElementById('rate').value,
+        vCap: document.getElementById('vCap').value,
+        vBirdie: document.getElementById('vBirdie').value,
+        vTrunc: document.getElementById('vTrunc').value,
+        oGold: document.getElementById('oGold').value,
+        oDiamond: document.getElementById('oDiamond').value,
+        oKuzu: document.getElementById('oKuzu')?.value || 'off',
+        oSana: document.getElementById('oSana')?.value || 'off',
+        oThreePutt: document.getElementById('oThreePutt').value,
+      },
+      vegasPairings: vegasPairings.slice(),
+      kzState: Object.assign({}, kzState),
+      siState: Object.assign({}, siState)
     };
+    for(let h=0;h<holeCount;h++){
+      for(let p=0;p<playerCount;p++){
+        const s=document.getElementById('s_'+h+'_'+p)?.value; if(s) fullData.scores[h+'_'+p]=s;
+        const m=document.getElementById('m_'+h+'_'+p)?.value; if(m) fullData.metals[h+'_'+p]=m;
+      }
+      const b=document.getElementById('b_'+h)?.value; if(b) fullData.birdies[h]=b;
+      const pr=document.getElementById('par_'+h)?.value; if(pr) fullData.pars[h]=pr;
+    }
+    const record = { date, course, mode, rate, players: names.slice(0,playerCount).map((n,i)=>({ name:n, pts:totals[i], yen:Math.round(totals[i]*rate) })), savedAt: Date.now(), fullData };
     let hist = JSON.parse(localStorage.getItem('golfHistory')||'[]');
-    // 同じ日付・コースの重複を上書き
     const dupIdx = hist.findIndex(r=>r.date===record.date&&r.course===record.course);
     if(dupIdx>=0) hist[dupIdx]=record; else hist.unshift(record);
     if(hist.length>50) hist=hist.slice(0,50);
     localStorage.setItem('golfHistory', JSON.stringify(hist));
   }
 
+  function renderHistoryDateSelect(hist) {
+    const sel = document.getElementById('histDateSelect');
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">── 日付を選択して復元 ──</option>';
+    hist.forEach((r, i) => {
+      const opt = document.createElement('option');
+      opt.value = i;
+      const days = ['日','月','火','水','木','金','土'];
+      const dateStr = r.date ? (() => { const d = new Date(r.date+'T00:00:00'); return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}(${days[d.getDay()]})`; })() : '(日付なし)';
+      opt.textContent = dateStr + (r.course ? ' ' + r.course : '');
+      sel.appendChild(opt);
+    });
+    if (cur) sel.value = cur;
+  }
+
+  function restoreFromDateSelect() {
+    const sel = document.getElementById('histDateSelect');
+    if (!sel || sel.value === '') { alert('日付を選択してください。'); return; }
+    restoreFromHistory(parseInt(sel.value));
+  }
+
+  function restoreFromHistory(idx) {
+    const hist = JSON.parse(localStorage.getItem('golfHistory')||'[]');
+    const r = hist[idx];
+    if (!r || !r.fullData) { alert('このデータは復元情報がありません。'); return; }
+    const label = (r.course || '(コース名なし)') + (r.date ? ' ' + r.date : '');
+    if (!confirm('"' + label + '" を復元しますか？\n現在の入力内容は上書きされます。')) return;
+    const data = r.fullData;
+    mode = data.mode || 'both'; selectedGame = mode;
+    ['vegas','olympic','both'].forEach(g => {
+      const c = document.getElementById('card-'+g); if(c) c.classList.toggle('selected', g===mode);
+      const ck = document.getElementById('check-'+g); if(ck) ck.textContent = g===mode?'✓':'';
+    });
+    const ab = document.getElementById('arrowBtn'); if(ab) ab.classList.add('enabled');
+    const labels = {vegas:'ラスベガス',olympic:'オリンピック',both:'両方'};
+    ['modeBadge','modeBadge2','modeBadge3','modeBadgeOlympic'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=labels[mode]; });
+    document.getElementById('vegasOptSection').classList.toggle('hidden', mode==='olympic');
+    document.getElementById('olympicOptSection').classList.toggle('hidden', mode==='vegas');
+    document.getElementById('playerCount').value = data.playerCount || 4;
+    document.getElementById('holeCount').value = data.holeCount || 18;
+    if (data.round) {
+      document.getElementById('courseName').value = data.round.course || '';
+      document.getElementById('roundDate').value = data.round.date || '';
+      document.getElementById('roundMemo').value = data.round.memo || '';
+      selectedWeather = data.round.weather || '';
+      document.querySelectorAll('.weather-btn').forEach(b => b.classList.toggle('selected', b.dataset.weather===selectedWeather));
+    }
+    if (data.options) Object.keys(data.options).forEach(k => { const el=document.getElementById(k); if(el) el.value=data.options[k]; });
+    if (data.vegasPairings && Array.isArray(data.vegasPairings)) data.vegasPairings.forEach((v,i) => { vegasPairings[i]=v; });
+    kzState = data.kzState ? Object.assign({}, data.kzState) : {};
+    siState = data.siState ? Object.assign({}, data.siState) : {};
+    rebuildAll();
+    setTimeout(() => {
+      if (data.names) data.names.forEach((n,i) => { const el=document.getElementById('pname'+i); if(el) el.value=n; });
+      if (data.pars) Object.keys(data.pars).forEach(k => { const el=document.getElementById('par_'+k); if(el) el.value=data.pars[k]; });
+      rebuildHoles();
+      setTimeout(() => {
+        if (data.scores) Object.keys(data.scores).forEach(k => { const el=document.getElementById('s_'+k); if(el) el.value=data.scores[k]; });
+        if (data.metals) Object.keys(data.metals).forEach(k => { const el=document.getElementById('m_'+k); if(el){el.value=data.metals[k];const pt=k.split('_');updateMC(pt[0],pt[1]);} });
+        calculate();
+        showScreen('screen-scores');
+      }, 50);
+    }, 50);
+  }
+
   function renderHistory() {
     const list = document.getElementById('historyList');
     const hist = JSON.parse(localStorage.getItem('golfHistory')||'[]');
+    renderHistoryDateSelect(hist);
     if(hist.length===0){
       list.innerHTML='<div class="hist-empty">履歴がありません</div>'; return;
     }
