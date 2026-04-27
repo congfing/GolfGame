@@ -45,8 +45,9 @@
     display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     gap: 10px;
   }
-  .opt-row { display: flex; align-items: center; gap: 8px; }
-  .opt-row label { min-width: 90px; }
+  .opt-row { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+  .opt-row label { min-width: 90px; flex-shrink: 0; }
+  .opt-row select { flex: 1; min-width: 0; max-width: 100%; }
 
   /* パー入力 */
   .par-panel {
@@ -177,11 +178,14 @@
     min-width: 12px; text-align: center;
   }
 
+  .special-btns-row {
+    display: flex; gap: 2px; margin-top: 2px; justify-content: center;
+  }
   .special-btn {
     display: inline-block; font-size: 9px; font-weight: 700;
     border: 1px solid #ccc; border-radius: 3px; padding: 1px 4px;
-    background: #f0f0ec; cursor: pointer; margin-top: 2px; opacity: 0.45;
-    line-height: 1.4; vertical-align: middle;
+    background: #f0f0ec; cursor: pointer; opacity: 0.45;
+    line-height: 1.4; flex: 1; text-align: center;
   }
   .special-btn.kz-active {
     opacity: 1; background: #fcebeb; color: #791f1f;
@@ -869,9 +873,10 @@
         const _siOn = document.getElementById('oSana')?.value === 'on';
         const _kzAct = kzState[h + '_' + p] ? ' kz-active' : '';
         const _siAct = siState[h + '_' + p] ? ' si-active' : '';
-        let _extra = '';
-        if (_kzOn) _extra += '<button class="special-btn' + _kzAct + '" id="kzbtn_' + h + '_' + p + '" onclick="toggleKZ(' + h + ',' + p + ')" title="クズ鉄（-1点）">鉄</button>';
-        if (_siOn) _extra += '<button class="special-btn' + _siAct + '" id="sibtn_' + h + '_' + p + '" onclick="toggleSI(' + h + ',' + p + ')" title="砂イチ（+3点）">砂</button>';
+        let _btns = '';
+        if (_kzOn) _btns += '<button class="special-btn' + _kzAct + '" id="kzbtn_' + h + '_' + p + '" onclick="toggleKZ(' + h + ',' + p + ')" title="クズ鉄（-1点）">鉄</button>';
+        if (_siOn) _btns += '<button class="special-btn' + _siAct + '" id="sibtn_' + h + '_' + p + '" onclick="toggleSI(' + h + ',' + p + ')" title="砂イチ（+3点）">砂</button>';
+        const _extra = _btns ? '<div class="special-btns-row">' + _btns + '</div>' : '';
         tbody += '<td class="' + cls + '"><span class="order-badge" id="oord_' + h + '_' + p + '" style="display:block;margin-bottom:2px;"></span><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select>' + _extra + '</td>';
       }
       tbody += '</tr>';
@@ -1191,6 +1196,9 @@
       const b = document.getElementById('b_' + h);
       if (b) b.value = '';
     }
+    kzState = {};
+    siState = {};
+    rebuildHoles();
     calculate();
   }
 
