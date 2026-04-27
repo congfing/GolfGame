@@ -171,10 +171,10 @@
   tr.round-sep td { border-top: 2px solid #1d9e75 !important; }
 
   .order-badge {
-    display: inline-block; font-size: 9px; font-weight: 700;
+    display: block; font-size: 9px; font-weight: 700;
     background: rgba(0,0,0,0.08); color: #555;
-    border-radius: 3px; padding: 1px 3px; margin-left: 2px;
-    vertical-align: middle; min-width: 12px; text-align: center;
+    border-radius: 3px; padding: 1px 3px; margin-top: 2px;
+    min-width: 12px; text-align: center;
   }
 
   .course-preset-bar {
@@ -238,7 +238,7 @@
     table.scores select { min-width: 40px; font-size: 10px; padding: 1px; }
     .result-grid { grid-template-columns: repeat(2, 1fr); }
     .result-total { font-size: 20px; }
-    .order-badge { display: inline-block; font-size: 8px; padding: 1px 2px; }
+    .order-badge { display: block; font-size: 8px; padding: 1px 2px; }
     .opt-grid { grid-template-columns: 1fr; }
     .round-info { grid-template-columns: repeat(2, 1fr); }
   }
@@ -1028,11 +1028,21 @@
     const hc = parseInt(document.getElementById('holeCount').value) || 18;
     for (let h = 0; h < hc; h++) {
       const order = getTeeOrder(h);
+      // 1行目は常に表示。2行目以降は前のホールにスコアが入ったら表示
+      let showBadge;
+      if (h === 0) {
+        showBadge = true;
+      } else {
+        showBadge = Array.from({length: playerCount}, (_, p) => {
+          const inp = document.getElementById('s_' + (h - 1) + '_' + p);
+          return inp && inp.value !== '';
+        }).some(Boolean);
+      }
       for (let p = 0; p < playerCount; p++) {
         const rank = order.indexOf(p);
         const txt = rank >= 0 ? (rank + 1) : '';
         const badge = document.getElementById('ord_' + h + '_' + p);
-        if (badge) badge.textContent = txt;
+        if (badge) badge.textContent = showBadge ? txt : '';
         const obadge = document.getElementById('oord_' + h + '_' + p);
         if (obadge) obadge.textContent = txt;
       }
