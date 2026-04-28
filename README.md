@@ -4,3 +4,4 @@ index.html>hozon style wo henkou
 index.html>sunaichi wo tuika
 index-04.html>sunaichi wo tuika
 orimpic ni point hyouji wo tuika
+point score goukei wo tuika
