@@ -1329,16 +1329,22 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
       }
       if(mode!=='vegas'){
         const o=calcOlympicHole(h);
-        for(let p=0;p<playerCount;p++){
-          if(o){
+        if(o){
+          const hSum=o.reduce((a,b)=>a+b,0);
+          for(let p=0;p<playerCount;p++){
             oRaw[p]+=o[p];
             if(holeCount===18){if(h<9) oRaw_h1[p]+=o[p]; else oRaw_h2[p]+=o[p];}
+            const ptCell=document.getElementById('opt_'+h+'_'+p);
+            if(ptCell){
+              const v=o[p]*playerCount-hSum;
+              if(v!==0){ptCell.textContent=(v>0?'+':'')+v;ptCell.style.color=v>0?'#1d9e75':'#e24b4a';}
+              else{ptCell.textContent='-';ptCell.style.color='#aaa';}
+            }
           }
-          const ptCell=document.getElementById('opt_'+h+'_'+p);
-          if(ptCell){
-            const v=o?o[p]:0;
-            if(o&&v!==0){ptCell.textContent=(v>0?'+':'')+v;ptCell.style.color=v>0?'#1d9e75':'#e24b4a';}
-            else{ptCell.textContent='-';ptCell.style.color='#aaa';}
+        } else {
+          for(let p=0;p<playerCount;p++){
+            const ptCell=document.getElementById('opt_'+h+'_'+p);
+            if(ptCell){ptCell.textContent='-';ptCell.style.color='#aaa';}
           }
         }
       }
