@@ -194,7 +194,7 @@ table.stbl th {
   font-size: 11px; font-weight: 500; position: sticky; top: 0; z-index: 2;
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
 }
-table.stbl .h-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); width: 20px; max-width: 20px; font-weight: 500; overflow: hidden; }
+table.stbl .h-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); width: 32px; max-width: 32px; font-weight: 500; }
 table.stbl .par-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); width: 24px; max-width: 24px; overflow: hidden; }
 table.stbl .ghost-col { background: rgba(0,0,0,0.01); color: rgba(0,0,0,0.2); font-style: italic; }
 table.stbl input[type="number"] {
@@ -995,7 +995,7 @@ tr.round-sep td {
     const showVegas=mode!=='olympic', showOlympic=mode!=='vegas';
     const showBirdie=false;
     const ghostPlayer=playerCount===3&&showVegas;
-    let thead='<thead><tr><th>H</th><th style="min-width:28px">Par</th>';
+    let thead='<thead><tr><th style="width:32px;max-width:32px">H</th><th style="width:26px;max-width:26px">Par</th>';
     for(let p=0;p<playerCount;p++) {
       thead+=`<th>${getName(p)}<br><span style="font-size:9px;color:rgba(0,0,0,0.3)">打数</span> <span style="font-size:9px;color:rgba(0,0,0,0.25)">得点</span> <span style="font-size:9px;color:rgba(0,0,0,0.2)">打順</span></th>`;
     }
