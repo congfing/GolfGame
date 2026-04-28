@@ -392,6 +392,16 @@ tr.round-sep td {
   .special-btns-row {
     display: flex; gap: 2px; margin-top: 2px; justify-content: center;
   }
+  .o-cell-wrap {
+    display: flex; align-items: center; gap: 3px; min-width: 0;
+  }
+  .o-cell-inner {
+    flex: 1; min-width: 0;
+  }
+  .o-pt-cell {
+    font-size: 10px; font-weight: 700; min-width: 18px;
+    text-align: right; color: #aaa; white-space: nowrap; flex-shrink: 0;
+  }
   .special-btn {
     display: inline-block; font-size: 9px; font-weight: 700;
     border: 1px solid #ccc; border-radius: 3px; padding: 1px 4px;
@@ -1319,9 +1329,17 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
       }
       if(mode!=='vegas'){
         const o=calcOlympicHole(h);
-        if(o) for(let p=0;p<playerCount;p++){
-          oRaw[p]+=o[p];
-          if(holeCount===18){if(h<9) oRaw_h1[p]+=o[p]; else oRaw_h2[p]+=o[p];}
+        for(let p=0;p<playerCount;p++){
+          if(o){
+            oRaw[p]+=o[p];
+            if(holeCount===18){if(h<9) oRaw_h1[p]+=o[p]; else oRaw_h2[p]+=o[p];}
+          }
+          const ptCell=document.getElementById('opt_'+h+'_'+p);
+          if(ptCell){
+            const v=o?o[p]:0;
+            if(o&&v!==0){ptCell.textContent=(v>0?'+':'')+v;ptCell.style.color=v>0?'#1d9e75':'#e24b4a';}
+            else{ptCell.textContent='-';ptCell.style.color='#aaa';}
+          }
         }
       }
     }
@@ -1441,7 +1459,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
         if (_kzOn) _btns += `<button class="special-btn${_kzAct}" id="kzbtn_${h}_${p}" onclick="toggleKZ(${h},${p})" title="クズ鉄（-1点）">鉄</button>`;
         if (_siOn) _btns += `<button class="special-btn${_siAct}" id="sibtn_${h}_${p}" onclick="toggleSI(${h},${p})" title="砂イチ（+3点）">砂</button>`;
         const _extra = _btns ? `<div class="special-btns-row">${_btns}</div>` : '';
-        tbody += '<td><select id="m_' + h + '_' + p + '" onchange="calculate()">' + opts + '</select>' + _extra + '</td>';
+        tbody += '<td><div class="o-cell-wrap"><div class="o-cell-inner"><select id="m_' + h + '_' + p + '" onchange="calculate()">' + opts + '</select>' + _extra + '</div><span id="opt_' + h + '_' + p + '" class="o-pt-cell">-</span></div></td>';
       }
       tbody += '</tr>';
       // 18ホール時：前半小計 → 後半ヘッダー
