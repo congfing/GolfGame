@@ -1296,6 +1296,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
 
   function calculate() {
     const vTotals=new Array(playerCount).fill(0),oRaw=new Array(playerCount).fill(0);
+    const oRaw_h1=new Array(playerCount).fill(0),oRaw_h2=new Array(playerCount).fill(0);
     for(let h=0;h<holeCount;h++){
       if(mode!=='olympic'){
         const v=calcVegasHole(h);
@@ -1316,10 +1317,53 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
           if(vCell){vCell.textContent='-';vCell.className='vscore-cell';}
         }
       }
-      if(mode!=='vegas'){const o=calcOlympicHole(h);if(o) for(let p=0;p<playerCount;p++) oRaw[p]+=o[p];}
+      if(mode!=='vegas'){
+        const o=calcOlympicHole(h);
+        if(o) for(let p=0;p<playerCount;p++){
+          oRaw[p]+=o[p];
+          if(holeCount===18){if(h<9) oRaw_h1[p]+=o[p]; else oRaw_h2[p]+=o[p];}
+        }
+      }
     }
     const oFinal=new Array(playerCount).fill(0);
-    if(mode!=='vegas'){const sum=oRaw.reduce((a,b)=>a+b,0);for(let p=0;p<playerCount;p++) oFinal[p]=oRaw[p]*playerCount-sum;}
+    const oFinal_h1=new Array(playerCount).fill(0);
+    const oFinal_h2=new Array(playerCount).fill(0);
+    if(mode!=='vegas'){
+      const sum=oRaw.reduce((a,b)=>a+b,0);
+      for(let p=0;p<playerCount;p++) oFinal[p]=oRaw[p]*playerCount-sum;
+      if(holeCount===18){
+        const sum1=oRaw_h1.reduce((a,b)=>a+b,0);
+        const sum2=oRaw_h2.reduce((a,b)=>a+b,0);
+        for(let p=0;p<playerCount;p++){
+          oFinal_h1[p]=oRaw_h1[p]*playerCount-sum1;
+          oFinal_h2[p]=oRaw_h2[p]*playerCount-sum2;
+        }
+      }
+    }
+    // オリンピック入力画面の前半/後半/合計行を更新
+    const anyInput=oRaw.some(r=>r!==0);
+    const anyH1=oRaw_h1.some(r=>r!==0);
+    const anyH2=oRaw_h2.some(r=>r!==0);
+    for(let p=0;p<playerCount;p++){
+      const cell=document.getElementById('ototal_'+p);
+      if(cell){
+        const v=oFinal[p];
+        cell.textContent = anyInput ? (v>0?'+':'')+v : '-';
+        cell.style.color = v>0?'#1d9e75':v<0?'#e24b4a':'#888';
+      }
+      const cell1=document.getElementById('ototal_h1_'+p);
+      if(cell1){
+        const v=oFinal_h1[p];
+        cell1.textContent = anyH1 ? (v>0?'+':'')+v : '-';
+        cell1.style.color = v>0?'#1d9e75':v<0?'#e24b4a':'#888';
+      }
+      const cell2=document.getElementById('ototal_h2_'+p);
+      if(cell2){
+        const v=oFinal_h2[p];
+        cell2.textContent = anyH2 ? (v>0?'+':'')+v : '-';
+        cell2.style.color = v>0?'#1d9e75':v<0?'#e24b4a':'#888';
+      }
+    }
     const totals=new Array(playerCount).fill(0);
     for(let p=0;p<playerCount;p++){if(mode!=='olympic') totals[p]+=vTotals[p];if(mode!=='vegas') totals[p]+=oFinal[p];}
     const rate=parseFloat(document.getElementById('rate').value)||0;
@@ -1400,13 +1444,32 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
         tbody += '<td><select id="m_' + h + '_' + p + '" onchange="calculate()">' + opts + '</select>' + _extra + '</td>';
       }
       tbody += '</tr>';
-      // 18ホール時の前半終了後に区切り行
+      // 18ホール時：前半小計 → 後半ヘッダー
       if (holeCount === 18 && h === 8) {
-        tbody += '<tr class="subtotal-row"><td class="h-col" colspan="' + (playerCount + 2) + '" style="text-align:left;padding-left:6px;">── 後半 ──</td></tr>';
+        tbody += '<tr class="subtotal-row"><td class="h-col" style="color:#1d9e75;font-weight:700;">前半</td><td class="par-col">-</td>';
+        for (let p = 0; p < playerCount; p++) {
+          tbody += '<td id="ototal_h1_' + p + '" style="font-weight:700;color:#888;">-</td>';
+        }
+        tbody += '</tr>';
+        tbody += '<tr style="background:rgba(0,0,0,0.03);"><td class="h-col" colspan="' + (playerCount + 2) + '" style="text-align:left;padding-left:6px;font-size:10px;color:#888;">── 後半 ──</td></tr>';
       }
     }
+    // 18ホール時：後半小計
+    if (holeCount === 18) {
+      tbody += '<tr class="subtotal-row"><td class="h-col" style="color:#1d9e75;font-weight:700;">後半</td><td class="par-col">-</td>';
+      for (let p = 0; p < playerCount; p++) {
+        tbody += '<td id="ototal_h2_' + p + '" style="font-weight:700;color:#888;">-</td>';
+      }
+      tbody += '</tr>';
+    }
     tbody += '</tbody>';
-    document.getElementById('olympicTable').innerHTML = thead + tbody;
+    let tfoot = '<tfoot><tr style="background:rgba(29,158,117,0.16); font-weight:700; border-top:2px solid rgba(29,158,117,0.5);">';
+    tfoot += '<td class="h-col" style="color:#1d9e75;">合計</td><td class="par-col">-</td>';
+    for (let p = 0; p < playerCount; p++) {
+      tfoot += '<td id="ototal_' + p + '" style="color:#888;">-</td>';
+    }
+    tfoot += '</tr></tfoot>';
+    document.getElementById('olympicTable').innerHTML = thead + tbody + tfoot;
   }
 
   function goToScores() {
