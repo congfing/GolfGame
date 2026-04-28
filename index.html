@@ -887,7 +887,7 @@
         if (_kzOn) _btns += '<button class="special-btn' + _kzAct + '" id="kzbtn_' + h + '_' + p + '" onclick="toggleKZ(' + h + ',' + p + ')" title="クズ鉄（-1点）">鉄</button>';
         if (_siOn) _btns += '<button class="special-btn' + _siAct + '" id="sibtn_' + h + '_' + p + '" onclick="toggleSI(' + h + ',' + p + ')" title="砂イチ（+3点）">砂</button>';
         const _extra = _btns ? '<div class="special-btns-row">' + _btns + '</div>' : '';
-        tbody += '<td class="' + cls + '"><div class="o-cell-wrap"><div class="o-cell-inner"><span class="order-badge" id="oord_' + h + '_' + p + '" style="display:block;margin-bottom:2px;"></span><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select>' + _extra + '</div><span id="opt_' + h + '_' + p + '" class="o-pt-cell">-</span></div></td>';
+        tbody += '<td class="' + cls + '"><div class="o-cell-wrap"><div class="o-cell-inner"><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select>' + _extra + '</div><span id="opt_' + h + '_' + p + '" class="o-pt-cell">-</span></div></td>';
       }
       tbody += '</tr>';
       if (holeCount === 18 && h === 8) {
@@ -1134,8 +1134,6 @@
         const txt = rank >= 0 ? (rank + 1) : '';
         const badge = document.getElementById('ord_' + h + '_' + p);
         if (badge) badge.textContent = showBadge ? txt : '';
-        const obadge = document.getElementById('oord_' + h + '_' + p);
-        if (obadge) obadge.textContent = txt;
       }
     }
   }
