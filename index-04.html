@@ -316,14 +316,25 @@ tr.round-sep td {
 /* ===== TEE ORDER ===== */
 .score-cell-wrap { display: flex; align-items: center; justify-content: center; gap: 3px; }
 .order-badge {
-  font-size: 11px; font-weight: 800; line-height: 1;
-  min-width: 13px; text-align: center;
-  color: rgba(0,0,0,0.0); pointer-events: none;
-  transition: color 0.2s;
+  font-size: 10px; font-weight: 800; line-height: 1;
+  min-width: 14px; text-align: center;
+  color: transparent; background: transparent;
+  border-radius: 3px; padding: 1px 3px;
+  pointer-events: none;
+  transition: color 0.2s, background 0.2s;
 }
-.order-badge.visible { color: rgba(0,0,0,0.45); }
-.team1-cell .order-badge.visible { color: rgba(59,130,246,0.85); }
-.team2-cell .order-badge.visible { color: rgba(220,100,0,0.85); }
+.order-badge.visible {
+  color: #fff;
+  background: rgba(0,0,0,0.32);
+}
+.team1-cell .order-badge.visible {
+  color: #fff;
+  background: rgba(59,130,246,0.75);
+}
+.team2-cell .order-badge.visible {
+  color: #fff;
+  background: rgba(220,100,0,0.75);
+}
 .order-label { font-size: 10px; color: rgba(0,0,0,0.45); margin-left: 3px; }
 .order-select { width: 46px !important; font-size: 12px !important; padding: 4px 2px !important; text-align: center; }
 
