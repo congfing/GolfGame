@@ -316,9 +316,11 @@ tr.round-sep td {
 /* ===== TEE ORDER ===== */
 .score-cell-wrap { display: flex; align-items: center; justify-content: center; gap: 3px; }
 .hole-vpt {
+  display: inline-block;
   font-size: 10px; font-weight: 700; color: #fff;
-  min-width: 22px; text-align: center; white-space: nowrap;
-  background: rgba(0,0,0,0.18); border-radius: 3px; padding: 1px 3px;
+  width: 32px; text-align: center; white-space: nowrap;
+  background: rgba(0,0,0,0.18); border-radius: 4px; padding: 2px 0;
+  line-height: 1.4; box-sizing: border-box;
 }
 .hole-vpt.vpt-pos { background: rgba(29,158,117,0.75); color: #fff; }
 .hole-vpt.vpt-neg { background: rgba(226,75,74,0.75); color: #fff; }
