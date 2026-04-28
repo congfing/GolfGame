@@ -187,19 +187,19 @@ select { min-width: 80px; }
 .score-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table.stbl { border-collapse: collapse; font-size: 12px; white-space: nowrap; }
 table.stbl th, table.stbl td {
-  border: 1px solid rgba(0,0,0,0.08); padding: 4px 3px; text-align: center; min-width: 46px;
+  border: 1px solid rgba(0,0,0,0.08); padding: 3px 1px; text-align: center; min-width: 0;
 }
 table.stbl th {
   background: rgba(0,0,0,0.06); color: #111;
   font-size: 11px; font-weight: 500; position: sticky; top: 0; z-index: 2;
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
 }
-table.stbl .h-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); min-width: 30px; font-weight: 500; }
-table.stbl .par-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); min-width: 28px; }
+table.stbl .h-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); width: 22px; min-width: 22px; font-weight: 500; }
+table.stbl .par-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); width: 22px; min-width: 22px; }
 table.stbl .ghost-col { background: rgba(0,0,0,0.01); color: rgba(0,0,0,0.2); font-style: italic; }
 table.stbl input[type="number"] {
-  width: 100%; min-width: 40px; background: transparent; border: none;
-  color: #111; font-size: 13px; padding: 3px 2px; text-align: center;
+  width: 100%; min-width: 0; background: transparent; border: none;
+  color: #111; font-size: 12px; padding: 2px 1px; text-align: center;
 }
 table.stbl input:focus { outline: 1px solid var(--green); background: rgba(29,158,117,0.08); border-radius: 4px; }
 table.stbl select {
@@ -314,24 +314,24 @@ tr.round-sep td {
 .honor-cell.tied { color: #888; font-size: 10px; }
 
 /* ===== TEE ORDER ===== */
-.score-cell-wrap { display: flex; align-items: center; justify-content: center; gap: 3px; }
-.score-cell-wrap input[type="number"] { width: 34px !important; min-width: 0 !important; flex-shrink: 0; }
+.score-cell-wrap { display: flex; align-items: center; justify-content: center; gap: 2px; }
+.score-cell-wrap input[type="number"] { width: 28px !important; min-width: 0 !important; flex-shrink: 0; }
 .hole-vpt {
   display: inline-block;
-  font-size: 10px; font-weight: 700; color: #fff;
-  width: 32px; text-align: center; white-space: nowrap;
-  background: rgba(0,0,0,0.18); border-radius: 4px; padding: 2px 0;
-  line-height: 1.4; box-sizing: border-box;
+  font-size: 9px; font-weight: 700; color: #fff;
+  width: 26px; text-align: center; white-space: nowrap;
+  background: rgba(0,0,0,0.18); border-radius: 3px; padding: 2px 0;
+  line-height: 1.4; box-sizing: border-box; flex-shrink: 0;
 }
 .hole-vpt.vpt-pos { background: rgba(29,158,117,0.75); color: #fff; }
 .hole-vpt.vpt-neg { background: rgba(226,75,74,0.75); color: #fff; }
 .hole-vpt.vpt-zero { background: rgba(0,0,0,0.12); color: #aaa; }
 .order-badge {
-  font-size: 10px; font-weight: 800; line-height: 1;
-  min-width: 14px; text-align: center;
+  font-size: 9px; font-weight: 800; line-height: 1;
+  min-width: 12px; text-align: center;
   color: transparent; background: transparent;
-  border-radius: 3px; padding: 1px 3px;
-  pointer-events: none;
+  border-radius: 3px; padding: 1px 2px;
+  pointer-events: none; flex-shrink: 0;
   transition: color 0.2s, background 0.2s;
 }
 .order-badge.visible {
