@@ -185,9 +185,9 @@ select { min-width: 80px; }
 }
 .arrow-btn.enabled:active { transform: scale(0.96); background: #0f6e56; }
 .score-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-table.stbl { border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+table.stbl { border-collapse: collapse; font-size: 12px; white-space: nowrap; width: 100%; table-layout: fixed; }
 table.stbl th, table.stbl td {
-  border: 1px solid rgba(0,0,0,0.08); padding: 3px 1px; text-align: center; min-width: 0;
+  border: 1px solid rgba(0,0,0,0.08); padding: 3px 2px; text-align: center; min-width: 0; width: auto;
 }
 table.stbl th {
   background: rgba(0,0,0,0.06); color: #111;
@@ -315,7 +315,7 @@ tr.round-sep td {
 
 /* ===== TEE ORDER ===== */
 .score-cell-wrap { display: flex; align-items: center; justify-content: center; gap: 2px; }
-.score-cell-wrap input[type="number"] { width: 28px !important; min-width: 0 !important; flex-shrink: 0; }
+.score-cell-wrap input[type="number"] { flex: 1; min-width: 0 !important; max-width: 40px; flex-shrink: 1; }
 .hole-vpt {
   display: inline-block;
   font-size: 9px; font-weight: 700; color: #fff;
