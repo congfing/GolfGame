@@ -1015,6 +1015,12 @@
     kzState[key] = !kzState[key];
     const btn = document.getElementById('kzbtn_' + h + '_' + p);
     if (btn) btn.classList.toggle('kz-active', !!kzState[key]);
+    // 砂イチと排他
+    if (kzState[key]) {
+      siState[key] = false;
+      const siBtn = document.getElementById('sibtn_' + h + '_' + p);
+      if (siBtn) siBtn.classList.remove('si-active');
+    }
     calculate();
   }
 
@@ -1023,6 +1029,12 @@
     siState[key] = !siState[key];
     const btn = document.getElementById('sibtn_' + h + '_' + p);
     if (btn) btn.classList.toggle('si-active', !!siState[key]);
+    // クズ鉄と排他
+    if (siState[key]) {
+      kzState[key] = false;
+      const kzBtn = document.getElementById('kzbtn_' + h + '_' + p);
+      if (kzBtn) kzBtn.classList.remove('kz-active');
+    }
     calculate();
   }
 
