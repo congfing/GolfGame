@@ -1367,8 +1367,8 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
 
   function rebuildOlympic() {
     const saved = {};
-    for (let h = 0; h < 18; h++) {
-      for (let p = 0; p < 4; p++) {
+    for (let h = 0; h < holeCount; h++) {
+      for (let p = 0; p < playerCount; p++) {
         const m = document.getElementById('m_' + h + '_' + p);
         if (m && m.value) saved[h + '_' + p] = m.value;
       }
@@ -1382,7 +1382,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     let tbody = '<tbody>';
     for (let h = 0; h < holeCount; h++) {
       const par = getPar(h);
-      tbody += '<tr><td class="h-col">' + (h+1) + '</td><td class="par-col">' + par + '</td>';
+      tbody += '<tr><td class="h-col">' + getDisplayHole(h) + '</td><td class="par-col">' + par + '</td>';
       for (let p = 0; p < playerCount; p++) {
         const mv = saved[h + '_' + p] || '';
         let opts = '<option value="">-</option>';
@@ -1400,6 +1400,10 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
         tbody += '<td><select id="m_' + h + '_' + p + '" onchange="calculate()">' + opts + '</select>' + _extra + '</td>';
       }
       tbody += '</tr>';
+      // 18ホール時の前半終了後に区切り行
+      if (holeCount === 18 && h === 8) {
+        tbody += '<tr class="subtotal-row"><td class="h-col" colspan="' + (playerCount + 2) + '" style="text-align:left;padding-left:6px;">── 後半 ──</td></tr>';
+      }
     }
     tbody += '</tbody>';
     document.getElementById('olympicTable').innerHTML = thead + tbody;
