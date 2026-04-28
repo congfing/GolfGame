@@ -933,16 +933,23 @@
       for (let h = start; h < end; h++) parSum += getPar(h);
       const parEl = document.getElementById('opar-' + id);
       if (parEl) parEl.textContent = parSum;
+      // 範囲内の素点を集計してから正規化
+      const rawSums = new Array(playerCount).fill(0);
+      let hasAny = false;
+      for (let h = start; h < end; h++) {
+        const r = calcOlympicHole(h);
+        if (r) { hasAny = true; for (let p = 0; p < playerCount; p++) rawSums[p] += r[p]; }
+      }
+      const totalRaw = rawSums.reduce((a, b) => a + b, 0);
       for (let p = 0; p < playerCount; p++) {
-        let sum = 0, hasAny = false;
-        for (let h = start; h < end; h++) {
-          const r = calcOlympicHole(h);
-          if (r) { sum += r[p]; hasAny = true; }
-        }
         const el = document.getElementById('osub-' + id + '-' + p);
         if (el) {
-          if (!hasAny) { el.textContent = '-'; }
-          else { el.textContent = (sum > 0 ? '+' : '') + sum; el.style.color = sum > 0 ? '#1d9e75' : sum < 0 ? '#e24b4a' : ''; }
+          if (!hasAny) { el.textContent = '-'; el.style.color = ''; }
+          else {
+            const v = rawSums[p] * playerCount - totalRaw;
+            el.textContent = (v > 0 ? '+' : '') + v;
+            el.style.color = v > 0 ? '#1d9e75' : v < 0 ? '#e24b4a' : '';
+          }
         }
       }
     });
