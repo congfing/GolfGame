@@ -181,6 +181,16 @@
   .special-btns-row {
     display: flex; gap: 2px; margin-top: 2px; justify-content: center;
   }
+  .o-cell-wrap {
+    display: flex; align-items: center; gap: 3px; min-width: 0;
+  }
+  .o-cell-inner {
+    flex: 1; min-width: 0;
+  }
+  .o-pt-cell {
+    font-size: 10px; font-weight: 700; min-width: 18px;
+    text-align: right; color: #aaa; white-space: nowrap; flex-shrink: 0;
+  }
   .special-btn {
     display: inline-block; font-size: 9px; font-weight: 700;
     border: 1px solid #ccc; border-radius: 3px; padding: 1px 4px;
@@ -877,7 +887,7 @@
         if (_kzOn) _btns += '<button class="special-btn' + _kzAct + '" id="kzbtn_' + h + '_' + p + '" onclick="toggleKZ(' + h + ',' + p + ')" title="クズ鉄（-1点）">鉄</button>';
         if (_siOn) _btns += '<button class="special-btn' + _siAct + '" id="sibtn_' + h + '_' + p + '" onclick="toggleSI(' + h + ',' + p + ')" title="砂イチ（+3点）">砂</button>';
         const _extra = _btns ? '<div class="special-btns-row">' + _btns + '</div>' : '';
-        tbody += '<td class="' + cls + '"><span class="order-badge" id="oord_' + h + '_' + p + '" style="display:block;margin-bottom:2px;"></span><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select>' + _extra + '</td>';
+        tbody += '<td class="' + cls + '"><div class="o-cell-wrap"><div class="o-cell-inner"><span class="order-badge" id="oord_' + h + '_' + p + '" style="display:block;margin-bottom:2px;"></span><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select>' + _extra + '</div><span id="opt_' + h + '_' + p + '" class="o-pt-cell">-</span></div></td>';
       }
       tbody += '</tr>';
       if (holeCount === 18 && h === 8) {
@@ -1149,7 +1159,23 @@
       }
       if (mode !== 'vegas') {
         const o = calcOlympicHole(h);
-        if (o) for (let p = 0; p < playerCount; p++) olympicRawTotals[p] += o[p];
+        if (o) {
+          const hSum = o.reduce((a, b) => a + b, 0);
+          for (let p = 0; p < playerCount; p++) {
+            olympicRawTotals[p] += o[p];
+            const ptCell = document.getElementById('opt_' + h + '_' + p);
+            if (ptCell) {
+              const v = o[p] * playerCount - hSum;
+              if (v !== 0) { ptCell.textContent = (v > 0 ? '+' : '') + v; ptCell.style.color = v > 0 ? '#1d9e75' : '#e24b4a'; }
+              else { ptCell.textContent = '-'; ptCell.style.color = '#aaa'; }
+            }
+          }
+        } else {
+          for (let p = 0; p < playerCount; p++) {
+            const ptCell = document.getElementById('opt_' + h + '_' + p);
+            if (ptCell) { ptCell.textContent = '-'; ptCell.style.color = '#aaa'; }
+          }
+        }
       }
     }
 
