@@ -1277,7 +1277,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     row += '<td class="h-col">' + label + '</td>';
     row += '<td class="par-col" id="spar-' + id + '">-</td>';
     for (let p = 0; p < playerCount; p++) {
-      row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;">-</td>';
+      row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;"><span id="stroke-' + id + '-' + p + '">-</span><span id="vsub-' + id + '-' + p + '" style="display:block;font-size:10px;font-weight:700;color:#888;"></span></td>';
     }
     if (ghostPlayer) row += '<td class="ghost-col">-</td>';
     if (showVegas) {
@@ -1303,14 +1303,13 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
       if (parEl) parEl.textContent = parSum;
 
       for (let p = 0; p < playerCount; p++) {
-        let sum = 0, hasAll = true;
+        let sum = 0, hasAny = false;
         for (let h = start; h < end; h++) {
           const v = getScore(h, p);
-          if (v === null) { hasAll = false; break; }
-          sum += v;
+          if (v !== null) { sum += v; hasAny = true; }
         }
-        const el = document.getElementById('sscore-' + id + '-' + p);
-        if (el) el.textContent = hasAll ? sum : '-';
+        const strokeEl = document.getElementById('stroke-' + id + '-' + p);
+        if (strokeEl) strokeEl.textContent = hasAny ? sum : '-';
       }
     });
   }
@@ -1318,11 +1317,15 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
   function calculate() {
     const vTotals=new Array(playerCount).fill(0),oRaw=new Array(playerCount).fill(0);
     const oRaw_h1=new Array(playerCount).fill(0),oRaw_h2=new Array(playerCount).fill(0);
+    const vTotals_h1=new Array(playerCount).fill(0),vTotals_h2=new Array(playerCount).fill(0);
     for(let h=0;h<holeCount;h++){
       if(mode!=='olympic'){
         const v=calcVegasHole(h);
         if(v){
-          for(let p=0;p<playerCount;p++) vTotals[p]+=v[p];
+          for(let p=0;p<playerCount;p++){
+            vTotals[p]+=v[p];
+            if(holeCount===18){if(h<9) vTotals_h1[p]+=v[p]; else vTotals_h2[p]+=v[p];}
+          }
           const vCell=document.getElementById('vscore_'+h);
           if(vCell){
             const roundIdx=h%3;
@@ -1423,6 +1426,22 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     updateHonorCells();
     updateTeeOrder();
     updateSubtotals();
+    // Vegas小計を各合計行に反映
+    if(mode!=='olympic'){
+      const vRanges=[{id:'total',arr:vTotals}];
+      if(holeCount===18){vRanges.push({id:'half1',arr:vTotals_h1});vRanges.push({id:'half2',arr:vTotals_h2});}
+      vRanges.forEach(({id,arr})=>{
+        const anyV=arr.some(v=>v!==0);
+        for(let p=0;p<playerCount;p++){
+          const el=document.getElementById('vsub-'+id+'-'+p);
+          if(el){
+            const v=arr[p];
+            el.textContent=anyV?(v>0?'+':'')+v+'pt':'-';
+            el.style.color=v>0?'#1d9e75':v<0?'#e24b4a':'#888';
+          }
+        }
+      });
+    }
   }
 
   
