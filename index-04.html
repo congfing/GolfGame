@@ -1472,7 +1472,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
       }
     }
     const metals = [['G','金🥇'],['S','銀🥈'],['B','銅🥉'],['I','鉄'],['D','💎'],['X','外し']];
-    let thead = '<thead><tr><th>H</th><th style="min-width:28px">Par</th>';
+    let thead = '<thead><tr><th style="width:32px;max-width:32px">H</th><th style="width:26px;max-width:26px">Par</th>';
     for (let p = 0; p < playerCount; p++) {
       thead += '<th>' + getName(p) + '</th>';
     }
