@@ -178,7 +178,7 @@
   .order-badge {
     display: block; font-size: 9px; font-weight: 700;
     background: rgba(0,0,0,0.08); color: #555;
-    border-radius: 3px; padding: 1px 3px; margin-top: 2px;
+    border-radius: 3px; padding: 1px 3px; margin-bottom: 2px;
     min-height: 13px; line-height: 11px;
   }
   .order-badge:empty {
@@ -822,7 +822,7 @@
       for (let p = 0; p < playerCount; p++) {
         const sv = savedScores[h + '_' + p] || '';
         const _tc = _pd ? (_pd.t1.includes(p) ? 'team1-cell' : _pd.t2.includes(p) ? 'team2-cell' : '') : '';
-        tbody += '<td class="score-td ' + _tc + '"><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate(); showScoreOK(this)" /><span class="order-badge" id="ord_' + h + '_' + p + '"></span></td>';
+        tbody += '<td class="score-td ' + _tc + '"><span class="order-badge" id="ord_' + h + '_' + p + '"></span><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate(); showScoreOK(this)" /></td>';
       }
       if (ghostPlayer) {
         tbody += '<td class="ghost-col">' + (par + 1) + '</td>';
