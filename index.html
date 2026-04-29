@@ -178,7 +178,7 @@
   .order-badge {
     display: block; font-size: 9px; font-weight: 700;
     background: rgba(0,0,0,0.08); color: #555;
-    border-radius: 3px; padding: 1px 3px; margin-bottom: 2px;
+    border-radius: 3px; padding: 1px 3px; margin-top: 2px;
     min-height: 13px; line-height: 11px;
   }
   .order-badge:empty {
@@ -302,6 +302,9 @@
   td.score-td { background: rgba(0, 0, 0, 0.04); }
   /* バーディー以下（イーグル・ホールインワン含む）*/
   td.score-under-td { background: rgba(210, 170, 0, 0.22) !important; }
+  /* 打順専用列 */
+  td.order-td { width: 20px; max-width: 20px; padding: 2px 1px !important; }
+  td.order-td .order-badge { display: block; margin: 0 auto; }
 
   /* 入力切替タブ */
   .input-switcher { display: flex; gap: 4px; }
@@ -801,7 +804,8 @@
 
     let thead = '<thead><tr><th>H</th><th>Par</th>';
     for (let p = 0; p < playerCount; p++) {
-      thead += '<th>' + getName(p) + '<br><span style="font-size:10px;color:#888780;">打数 打順</span></th>';
+      thead += '<th style="width:20px;max-width:20px;font-size:9px;color:#888780;padding:2px 1px;">打順</th>';
+      thead += '<th>' + getName(p) + '<br><span style="font-size:10px;color:#888780;">打数</span></th>';
     }
     if (ghostPlayer) {
       thead += '<th style="color:#888780;">4人目<br><span style="font-size:10px;">Par+1</span></th>';
@@ -822,7 +826,8 @@
       for (let p = 0; p < playerCount; p++) {
         const sv = savedScores[h + '_' + p] || '';
         const _tc = _pd ? (_pd.t1.includes(p) ? 'team1-cell' : _pd.t2.includes(p) ? 'team2-cell' : '') : '';
-        tbody += '<td class="score-td ' + _tc + '"><span class="order-badge" id="ord_' + h + '_' + p + '"></span><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate(); showScoreOK(this)" /></td>';
+        tbody += '<td class="order-td ' + _tc + '"><span class="order-badge" id="ord_' + h + '_' + p + '"></span></td>';
+        tbody += '<td class="score-td ' + _tc + '"><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate(); showScoreOK(this)" /></td>';
       }
       if (ghostPlayer) {
         tbody += '<td class="ghost-col">' + (par + 1) + '</td>';
@@ -1853,6 +1858,7 @@
     row += '<td class="hole-num">' + label + '</td>';
     row += '<td class="par-col" id="spar-' + id + '">-</td>';
     for (let p = 0; p < playerCount; p++) {
+      row += '<td class="order-td"></td>';
       row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;"><span id="stroke-' + id + '-' + p + '">-</span><br><span id="vsub-' + id + '-' + p + '" style="font-size:10px;font-weight:700;color:#888;">-</span></td>';
     }
     if (ghostPlayer) row += '<td class="ghost-col">-</td>';
