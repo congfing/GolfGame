@@ -293,14 +293,10 @@
   }
   .score-ok-flash { animation: cellFlash 0.55s ease-out; }
 
-  /* スコア入力：全セル統一ベース（薄グレー） */
-  table.scores input[type="number"] {
-    background: rgba(0, 0, 0, 0.05);
-  }
+  /* スコア入力セル：薄グレーベース */
+  td.score-td { background: rgba(0, 0, 0, 0.04); }
   /* バーディー以下（イーグル・ホールインワン含む）*/
-  table.scores input.score-under {
-    background: rgba(210, 170, 0, 0.22);
-  }
+  td.score-under-td { background: rgba(210, 170, 0, 0.22) !important; }
 
   /* 入力切替タブ */
   .input-switcher { display: flex; gap: 4px; }
@@ -821,7 +817,7 @@
       for (let p = 0; p < playerCount; p++) {
         const sv = savedScores[h + '_' + p] || '';
         const _tc = _pd ? (_pd.t1.includes(p) ? 'team1-cell' : _pd.t2.includes(p) ? 'team2-cell' : '') : '';
-        tbody += '<td class="' + _tc + '"><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate(); showScoreOK(this)" /><span class="order-badge" id="ord_' + h + '_' + p + '"></span></td>';
+        tbody += '<td class="score-td ' + _tc + '"><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate(); showScoreOK(this)" /><span class="order-badge" id="ord_' + h + '_' + p + '"></span></td>';
       }
       if (ghostPlayer) {
         tbody += '<td class="ghost-col">' + (par + 1) + '</td>';
@@ -1171,14 +1167,15 @@
     const olympicRawTotals = new Array(playerCount).fill(0);
 
     for (let h = 0; h < holeCount; h++) {
-      // バーディー以下（イーグル・ホールインワン含む）の入力セルに黄色丸囲み
+      // バーディー以下（イーグル・ホールインワン含む）のTDに黄色背景
       const _par = getPar(h);
       for (let p = 0; p < playerCount; p++) {
         const _inp = document.getElementById('s_' + h + '_' + p);
         if (_inp) {
           const _sc = _inp.value ? parseInt(_inp.value) : null;
-          if (_sc !== null && _sc < _par) { _inp.classList.add('score-under'); }
-          else { _inp.classList.remove('score-under'); }
+          const _td = _inp.parentElement;
+          if (_sc !== null && _sc < _par) { _td.classList.add('score-under-td'); }
+          else { _td.classList.remove('score-under-td'); }
         }
       }
 
