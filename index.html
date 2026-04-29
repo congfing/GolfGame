@@ -185,14 +185,26 @@
     display: flex; gap: 2px; margin-top: 2px; justify-content: center;
   }
   .o-cell-wrap {
-    display: flex; align-items: center; gap: 3px; min-width: 0;
+    position: relative; padding-right: 32px;
+    min-width: 0; width: 100%; box-sizing: border-box;
   }
   .o-cell-inner {
-    flex: 1; min-width: 0;
+    width: 100%;
+  }
+  .o-cell-inner select {
+    width: 100%; min-width: 0; box-sizing: border-box;
   }
   .o-pt-cell {
-    font-size: 10px; font-weight: 700; min-width: 18px;
-    text-align: right; color: #aaa; white-space: nowrap; flex-shrink: 0;
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    display: inline-flex; align-items: center;
+    width: 30px;
+    font-size: 10px; font-weight: 700; white-space: nowrap; color: #aaa;
+  }
+  .o-pt-sign {
+    width: 9px; flex-shrink: 0; text-align: center;
+  }
+  .o-pt-num {
+    flex: 1; text-align: left;
   }
   .special-btn {
     display: inline-block; font-size: 9px; font-weight: 700;
@@ -258,6 +270,10 @@
   }
   .subtotal-row .hole-num, .total-row .hole-num {
     color: #0f6e56; font-size: 12px; white-space: nowrap;
+  }
+  .subtotal-row .o-pt-cell,
+  .total-row .o-pt-cell {
+    font-size: 13px; font-weight: 700; color: #888;
   }
 
   /* スマホ対応 */
@@ -890,22 +906,22 @@
         if (_kzOn) _btns += '<button class="special-btn' + _kzAct + '" id="kzbtn_' + h + '_' + p + '" onclick="toggleKZ(' + h + ',' + p + ')" title="クズ鉄（-1点）">鉄</button>';
         if (_siOn) _btns += '<button class="special-btn' + _siAct + '" id="sibtn_' + h + '_' + p + '" onclick="toggleSI(' + h + ',' + p + ')" title="砂イチ（+3点）">砂</button>';
         const _extra = _btns ? '<div class="special-btns-row">' + _btns + '</div>' : '';
-        tbody += '<td class="' + cls + '"><div class="o-cell-wrap"><div class="o-cell-inner"><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select>' + _extra + '</div><span id="opt_' + h + '_' + p + '" class="o-pt-cell">-</span></div></td>';
+        tbody += '<td class="' + cls + '"><div class="o-cell-wrap"><div class="o-cell-inner"><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select>' + _extra + '</div><span id="opt_' + h + '_' + p + '" class="o-pt-cell"><span class="o-pt-sign"></span><span class="o-pt-num">-</span></span></div></td>';
       }
       tbody += '</tr>';
       if (holeCount === 18 && h === 8) {
         tbody += '<tr class="subtotal-row"><td class="hole-num">前半</td><td class="par-col" id="opar-half1">-</td>';
-        for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-half1-' + p + '">-</td>';
+        for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-half1-' + p + '"><div class="o-cell-wrap"><div class="o-cell-inner"></div><span class="o-pt-cell"><span class="o-pt-sign"></span><span class="o-pt-num">-</span></span></div></td>';
         tbody += '</tr>';
       }
     }
     if (holeCount === 18) {
       tbody += '<tr class="subtotal-row"><td class="hole-num">後半</td><td class="par-col" id="opar-half2">-</td>';
-      for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-half2-' + p + '">-</td>';
+      for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-half2-' + p + '"><div class="o-cell-wrap"><div class="o-cell-inner"></div><span class="o-pt-cell"><span class="o-pt-sign"></span><span class="o-pt-num">-</span></span></div></td>';
       tbody += '</tr>';
     }
     tbody += '<tr class="total-row"><td class="hole-num">合計</td><td class="par-col" id="opar-total">-</td>';
-    for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-total-' + p + '">-</td>';
+    for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-total-' + p + '"><div class="o-cell-wrap"><div class="o-cell-inner"></div><span class="o-pt-cell"><span class="o-pt-sign"></span><span class="o-pt-num">-</span></span></div></td>';
     tbody += '</tr>';
     tbody += '</tbody>';
     table.innerHTML = thead + tbody;
@@ -947,11 +963,17 @@
       for (let p = 0; p < playerCount; p++) {
         const el = document.getElementById('osub-' + id + '-' + p);
         if (el) {
-          if (!hasAny) { el.textContent = '-'; el.style.color = ''; }
-          else {
+          const _pc = el.querySelector('.o-pt-cell');
+          const _sg = el.querySelector('.o-pt-sign');
+          const _nm = el.querySelector('.o-pt-num');
+          if (!hasAny) {
+            if (_sg) _sg.textContent = ''; if (_nm) _nm.textContent = '-';
+            if (_pc) _pc.style.color = '#888';
+          } else {
             const v = rawSums[p] * playerCount - totalRaw;
-            el.textContent = (v > 0 ? '+' : '') + v;
-            el.style.color = v > 0 ? '#1d9e75' : v < 0 ? '#e24b4a' : '';
+            if (_sg) _sg.textContent = v > 0 ? '+' : v < 0 ? '-' : '';
+            if (_nm) _nm.textContent = v !== 0 ? Math.abs(v) : '-';
+            if (_pc) _pc.style.color = v > 0 ? '#1d9e75' : v < 0 ? '#e24b4a' : '#888';
           }
         }
       }
@@ -1179,14 +1201,27 @@
             const ptCell = document.getElementById('opt_' + h + '_' + p);
             if (ptCell) {
               const v = o[p] * playerCount - hSum;
-              if (v !== 0) { ptCell.textContent = (v > 0 ? '+' : '') + v; ptCell.style.color = v > 0 ? '#1d9e75' : '#e24b4a'; }
-              else { ptCell.textContent = '-'; ptCell.style.color = '#aaa'; }
+              const _sign = ptCell.querySelector('.o-pt-sign');
+              const _num = ptCell.querySelector('.o-pt-num');
+              if (v !== 0) {
+                if (_sign) _sign.textContent = v > 0 ? '+' : '-';
+                if (_num) _num.textContent = Math.abs(v);
+                ptCell.style.color = v > 0 ? '#1d9e75' : '#e24b4a';
+              } else {
+                if (_sign) _sign.textContent = '';
+                if (_num) _num.textContent = '-';
+                ptCell.style.color = '#aaa';
+              }
             }
           }
         } else {
           for (let p = 0; p < playerCount; p++) {
             const ptCell = document.getElementById('opt_' + h + '_' + p);
-            if (ptCell) { ptCell.textContent = '-'; ptCell.style.color = '#aaa'; }
+            if (ptCell) {
+              const _s = ptCell.querySelector('.o-pt-sign'); if (_s) _s.textContent = '';
+              const _n = ptCell.querySelector('.o-pt-num'); if (_n) _n.textContent = '-';
+              ptCell.style.color = '#aaa';
+            }
           }
         }
       }
@@ -1812,7 +1847,7 @@
     row += '<td class="hole-num">' + label + '</td>';
     row += '<td class="par-col" id="spar-' + id + '">-</td>';
     for (let p = 0; p < playerCount; p++) {
-      row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;"><span id="stroke-' + id + '-' + p + '">-</span><span id="vsub-' + id + '-' + p + '" style="display:block;font-size:10px;font-weight:700;color:#888;"></span></td>';
+      row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;"><span id="stroke-' + id + '-' + p + '">-</span><br><span id="vsub-' + id + '-' + p + '" style="font-size:10px;font-weight:700;color:#888;">-</span></td>';
     }
     if (ghostPlayer) row += '<td class="ghost-col">-</td>';
     if (showVegas) row += '<td class="vscore-col" id="svegas-' + id + '">-</td>';
