@@ -185,21 +185,21 @@ select { min-width: 80px; }
 }
 .arrow-btn.enabled:active { transform: scale(0.96); background: #0f6e56; }
 .score-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-table.stbl { border-collapse: collapse; font-size: 12px; white-space: nowrap; width: 100%; table-layout: fixed; }
+table.stbl { border-collapse: collapse; font-size: 12px; white-space: nowrap; }
 table.stbl th, table.stbl td {
-  border: 1px solid rgba(0,0,0,0.08); padding: 3px 2px; text-align: center; min-width: 0; width: auto;
+  border: 1px solid rgba(0,0,0,0.08); padding: 4px 3px; text-align: center; min-width: 46px;
 }
 table.stbl th {
   background: rgba(0,0,0,0.06); color: #111;
   font-size: 11px; font-weight: 500; position: sticky; top: 0; z-index: 2;
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
 }
-table.stbl .h-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); width: 32px; max-width: 32px; font-weight: 500; }
-table.stbl .par-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); width: 24px; max-width: 24px; overflow: hidden; }
+table.stbl .h-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); min-width: 30px; font-weight: 500; }
+table.stbl .par-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); min-width: 28px; }
 table.stbl .ghost-col { background: rgba(0,0,0,0.01); color: rgba(0,0,0,0.2); font-style: italic; }
 table.stbl input[type="number"] {
-  width: 100%; min-width: 0; background: transparent; border: none;
-  color: #111; font-size: 12px; padding: 2px 1px; text-align: center;
+  width: 100%; min-width: 40px; background: transparent; border: none;
+  color: #111; font-size: 13px; padding: 3px 2px; text-align: center;
 }
 table.stbl input:focus { outline: 1px solid var(--green); background: rgba(29,158,117,0.08); border-radius: 4px; }
 table.stbl select {
@@ -314,24 +314,13 @@ tr.round-sep td {
 .honor-cell.tied { color: #888; font-size: 10px; }
 
 /* ===== TEE ORDER ===== */
-.score-cell-wrap { display: flex; align-items: center; justify-content: center; gap: 2px; }
-.score-cell-wrap input[type="number"] { flex: 1; min-width: 0 !important; max-width: 40px; flex-shrink: 1; }
-.hole-vpt {
-  display: inline-block;
-  font-size: 9px; font-weight: 700; color: #fff;
-  width: 26px; text-align: center; white-space: nowrap;
-  background: rgba(0,0,0,0.18); border-radius: 3px; padding: 2px 0;
-  line-height: 1.4; box-sizing: border-box; flex-shrink: 0;
-}
-.hole-vpt.vpt-pos { background: rgba(29,158,117,0.75); color: #fff; }
-.hole-vpt.vpt-neg { background: rgba(226,75,74,0.75); color: #fff; }
-.hole-vpt.vpt-zero { background: rgba(0,0,0,0.12); color: #aaa; }
+.score-cell-wrap { display: flex; align-items: center; justify-content: center; gap: 3px; }
 .order-badge {
-  font-size: 9px; font-weight: 800; line-height: 1;
-  min-width: 12px; text-align: center;
+  font-size: 10px; font-weight: 800; line-height: 1;
+  min-width: 14px; text-align: center;
   color: transparent; background: transparent;
-  border-radius: 3px; padding: 1px 2px;
-  pointer-events: none; flex-shrink: 0;
+  border-radius: 3px; padding: 1px 3px;
+  pointer-events: none;
   transition: color 0.2s, background 0.2s;
 }
 .order-badge.visible {
@@ -411,6 +400,7 @@ tr.round-sep td {
   .subtotal-row .h-col, .total-row .h-col {
     color: var(--green); font-size: 11px; white-space: nowrap;
   }
+  hr.score-divider { border: none; border-top: 1px solid #d0cec5; margin: 2px 0; }
   .special-btns-row {
     display: flex; gap: 2px; margin-top: 2px; justify-content: center;
   }
@@ -995,13 +985,13 @@ tr.round-sep td {
     const showVegas=mode!=='olympic', showOlympic=mode!=='vegas';
     const showBirdie=false;
     const ghostPlayer=playerCount===3&&showVegas;
-    let thead='<thead><tr><th style="width:32px;max-width:32px">H</th><th style="width:26px;max-width:26px">Par</th>';
+    let thead='<thead><tr><th>H</th><th style="min-width:28px">Par</th>';
     for(let p=0;p<playerCount;p++) {
-      thead+=`<th>${getName(p)}<br><span style="font-size:9px;color:rgba(0,0,0,0.3)">打数</span> <span style="font-size:9px;color:rgba(0,0,0,0.25)">得点</span> <span style="font-size:9px;color:rgba(0,0,0,0.2)">打順</span></th>`;
+      thead+=`<th>${getName(p)}<br><span style="font-size:9px;color:rgba(0,0,0,0.3)">打数</span> <span style="font-size:9px;color:rgba(0,0,0,0.25)">打順</span></th>`;
     }
     if(ghostPlayer) thead+='<th style="color:rgba(255,255,255,0.2)">4人目<br><span style="font-size:9px">Par+1</span></th>';
     if(showBirdie) thead+='<th style="min-width:70px">🐦</th>';
-    thead+='</tr></thead>';
+    if(showVegas) thead+='<th style="font-size:10px;font-weight:500">得点</th><th style="font-size:10px;font-weight:500">ペア</th>'; thead+='</tr></thead>';
     let tbody='<tbody>';
     for(let h=0;h<holeCount;h++) {
       const par=getPar(h);
@@ -1013,13 +1003,21 @@ tr.round-sep td {
       for(let p=0;p<playerCount;p++) {
         const sv=saved.s[h+'_'+p]||'';
         const _tc=(_pd&&_pd.t1.includes(p))?'team1-cell':(_pd&&_pd.t2.includes(p))?'team2-cell':'';
-        tbody+=`<td class="${_tc}"><div class="score-cell-wrap"><input type="number" id="s_${h}_${p}" min="1" value="${sv}" oninput="calculate()"><span class="hole-vpt" id="vp_${h}_${p}">-</span><span class="order-badge" id="ord_${h}_${p}"></span></div></td>`;
+        tbody+=`<td class="${_tc}"><div class="score-cell-wrap"><input type="number" id="s_${h}_${p}" min="1" value="${sv}" oninput="calculate()"><span class="order-badge" id="ord_${h}_${p}"></span></div></td>`;
       }
       if(ghostPlayer) tbody+=`<td class="ghost-col">${par+1}</td>`;
       if(showBirdie) {
         const bv=saved.b[h]||''; let opts='<option value="">-</option>';
         for(let p=0;p<playerCount;p++) opts+=`<option value="${p}"${bv==p?' selected':''}>${getName(p)}</option>`;
         tbody+=`<td><select id="b_${h}" onchange="calculate()">${opts}</select></td>`;
+      }
+      if(showVegas) {
+        tbody+=`<td id='vscore_${h}' class='vscore-cell'>-</td>`;
+        const _vd=PAIR_DEFS[vegasPairings[_rIdx]];
+        const _n=(i)=>getName(i)||('M'+(i+1));
+        const _t1=`<span class='vs-t1'>${_n(_vd.t1[0])}・${_n(_vd.t1[1])}</span>`;
+        const _t2=`<span class='vs-t2'>${_n(_vd.t2[0])}・${_n(_vd.t2[1])}</span>`;
+        tbody+=`<td class='vs-cell'>${_t1} <span style='color:#aaa'>vs</span> ${_t2}</td>`;
       }
       tbody+='</tr>';
 
@@ -1280,9 +1278,13 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     row += '<td class="h-col">' + label + '</td>';
     row += '<td class="par-col" id="spar-' + id + '">-</td>';
     for (let p = 0; p < playerCount; p++) {
-      row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;"><span id="stroke-' + id + '-' + p + '">-</span><br><span id="vsub-' + id + '-' + p + '" style="font-size:10px;font-weight:700;color:#888;">-</span></td>';
+      row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;"><span id="stroke-' + id + '-' + p + '">-</span><hr class="score-divider"><span id="vsub-' + id + '-' + p + '" style="font-weight:700;color:#888;">-</span></td>';
     }
     if (ghostPlayer) row += '<td class="ghost-col">-</td>';
+    if (showVegas) {
+      row += '<td class="vscore-cell">-</td>';
+      row += '<td class="vs-cell"></td>';
+    }
     row += '</tr>';
     return row;
   }
@@ -1325,20 +1327,19 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
             vTotals[p]+=v[p];
             if(holeCount===18){if(h<9) vTotals_h1[p]+=v[p]; else vTotals_h2[p]+=v[p];}
           }
-          for(let p=0;p<playerCount;p++){
-            const vpCell=document.getElementById('vp_'+h+'_'+p);
-            if(vpCell){
-              const pv=v[p];
-              if(pv>0){vpCell.textContent='+'+pv;vpCell.className='hole-vpt vpt-pos';}
-              else if(pv<0){vpCell.textContent=pv;vpCell.className='hole-vpt vpt-neg';}
-              else{vpCell.textContent='-';vpCell.className='hole-vpt vpt-zero';}
-            }
+          const vCell=document.getElementById('vscore_'+h);
+          if(vCell){
+            const roundIdx=h%3;
+            const pd=PAIR_DEFS[vegasPairings[roundIdx]];
+            const t1pts=v[pd.t1[0]];
+            const absVal=Math.abs(t1pts);
+            if(t1pts>0){vCell.textContent='+'+absVal;vCell.className='vscore-cell vscore-t1';}
+            else if(t1pts<0){vCell.textContent='+'+absVal;vCell.className='vscore-cell vscore-t2';}
+            else{vCell.textContent='0';vCell.className='vscore-cell vscore-tie';}
           }
         } else {
-          for(let p=0;p<playerCount;p++){
-            const vpCell=document.getElementById('vp_'+h+'_'+p);
-            if(vpCell){vpCell.textContent='-';vpCell.className='hole-vpt vpt-zero';}
-          }
+          const vCell=document.getElementById('vscore_'+h);
+          if(vCell){vCell.textContent='-';vCell.className='vscore-cell';}
         }
       }
       if(mode!=='vegas'){
@@ -1472,7 +1473,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
       }
     }
     const metals = [['G','金🥇'],['S','銀🥈'],['B','銅🥉'],['I','鉄'],['D','💎'],['X','外し']];
-    let thead = '<thead><tr><th style="width:32px;max-width:32px">H</th><th style="width:26px;max-width:26px">Par</th>';
+    let thead = '<thead><tr><th>H</th><th style="min-width:28px">Par</th>';
     for (let p = 0; p < playerCount; p++) {
       thead += '<th>' + getName(p) + '</th>';
     }
