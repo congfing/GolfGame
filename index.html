@@ -196,15 +196,9 @@
   }
   .o-pt-cell {
     position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-    display: inline-flex; align-items: center;
     width: 30px;
+    display: flex; justify-content: flex-end; align-items: center;
     font-size: 10px; font-weight: 700; white-space: nowrap; color: #aaa;
-  }
-  .o-pt-sign {
-    width: 9px; flex-shrink: 0; text-align: center;
-  }
-  .o-pt-num {
-    flex: 1; text-align: right;
   }
   .special-btn {
     display: inline-block; font-size: 9px; font-weight: 700;
@@ -298,6 +292,13 @@
     100% { background: rgba(29,158,117,0); }
   }
   .score-ok-flash { animation: cellFlash 0.55s ease-out; }
+
+  /* バーディー以下（イーグル・ホールインワン含む）*/
+  table.scores input.score-under {
+    background: rgba(210, 170, 0, 0.18) !important;
+    border: 1.5px solid #b8960a !important;
+    border-radius: 3px !important;
+  }
 
   /* 入力切替タブ */
   .input-switcher { display: flex; gap: 4px; }
@@ -906,22 +907,22 @@
         if (_kzOn) _btns += '<button class="special-btn' + _kzAct + '" id="kzbtn_' + h + '_' + p + '" onclick="toggleKZ(' + h + ',' + p + ')" title="クズ鉄（-1点）">鉄</button>';
         if (_siOn) _btns += '<button class="special-btn' + _siAct + '" id="sibtn_' + h + '_' + p + '" onclick="toggleSI(' + h + ',' + p + ')" title="砂イチ（+3点）">砂</button>';
         const _extra = _btns ? '<div class="special-btns-row">' + _btns + '</div>' : '';
-        tbody += '<td class="' + cls + '"><div class="o-cell-wrap"><div class="o-cell-inner"><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select>' + _extra + '</div><span id="opt_' + h + '_' + p + '" class="o-pt-cell"><span class="o-pt-sign"></span><span class="o-pt-num">-</span></span></div></td>';
+        tbody += '<td class="' + cls + '"><div class="o-cell-wrap"><div class="o-cell-inner"><select id="m_' + h + '_' + p + '" onchange="calculate(); updateMetalColor(' + h + ',' + p + ')">' + opts + '</select>' + _extra + '</div><span id="opt_' + h + '_' + p + '" class="o-pt-cell">-</span></div></td>';
       }
       tbody += '</tr>';
       if (holeCount === 18 && h === 8) {
         tbody += '<tr class="subtotal-row"><td class="hole-num">前半</td><td class="par-col" id="opar-half1">-</td>';
-        for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-half1-' + p + '"><div class="o-cell-wrap"><div class="o-cell-inner"></div><span class="o-pt-cell"><span class="o-pt-sign"></span><span class="o-pt-num">-</span></span></div></td>';
+        for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-half1-' + p + '"><div class="o-cell-wrap"><div class="o-cell-inner"></div><span class="o-pt-cell">-</span></div></td>';
         tbody += '</tr>';
       }
     }
     if (holeCount === 18) {
       tbody += '<tr class="subtotal-row"><td class="hole-num">後半</td><td class="par-col" id="opar-half2">-</td>';
-      for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-half2-' + p + '"><div class="o-cell-wrap"><div class="o-cell-inner"></div><span class="o-pt-cell"><span class="o-pt-sign"></span><span class="o-pt-num">-</span></span></div></td>';
+      for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-half2-' + p + '"><div class="o-cell-wrap"><div class="o-cell-inner"></div><span class="o-pt-cell">-</span></div></td>';
       tbody += '</tr>';
     }
     tbody += '<tr class="total-row"><td class="hole-num">合計</td><td class="par-col" id="opar-total">-</td>';
-    for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-total-' + p + '"><div class="o-cell-wrap"><div class="o-cell-inner"></div><span class="o-pt-cell"><span class="o-pt-sign"></span><span class="o-pt-num">-</span></span></div></td>';
+    for (let p = 0; p < playerCount; p++) tbody += '<td id="osub-total-' + p + '"><div class="o-cell-wrap"><div class="o-cell-inner"></div><span class="o-pt-cell">-</span></div></td>';
     tbody += '</tr>';
     tbody += '</tbody>';
     table.innerHTML = thead + tbody;
@@ -964,16 +965,14 @@
         const el = document.getElementById('osub-' + id + '-' + p);
         if (el) {
           const _pc = el.querySelector('.o-pt-cell');
-          const _sg = el.querySelector('.o-pt-sign');
-          const _nm = el.querySelector('.o-pt-num');
           if (!hasAny) {
-            if (_sg) _sg.textContent = ''; if (_nm) _nm.textContent = '-';
-            if (_pc) _pc.style.color = '#888';
+            if (_pc) { _pc.textContent = '-'; _pc.style.color = '#888'; }
           } else {
             const v = rawSums[p] * playerCount - totalRaw;
-            if (_sg) _sg.textContent = v > 0 ? '+' : v < 0 ? '-' : '';
-            if (_nm) _nm.textContent = v !== 0 ? Math.abs(v) : '-';
-            if (_pc) _pc.style.color = v > 0 ? '#1d9e75' : v < 0 ? '#e24b4a' : '#888';
+            if (_pc) {
+              _pc.textContent = (v > 0 ? '+' : '') + v;
+              _pc.style.color = v > 0 ? '#1d9e75' : v < 0 ? '#e24b4a' : '#888';
+            }
           }
         }
       }
@@ -1170,6 +1169,17 @@
     const olympicRawTotals = new Array(playerCount).fill(0);
 
     for (let h = 0; h < holeCount; h++) {
+      // バーディー以下（イーグル・ホールインワン含む）の入力セルに黄色丸囲み
+      const _par = getPar(h);
+      for (let p = 0; p < playerCount; p++) {
+        const _inp = document.getElementById('s_' + h + '_' + p);
+        if (_inp) {
+          const _sc = _inp.value ? parseInt(_inp.value) : null;
+          if (_sc !== null && _sc < _par) { _inp.classList.add('score-under'); }
+          else { _inp.classList.remove('score-under'); }
+        }
+      }
+
       if (mode !== 'olympic') {
         const v = calcVegasHole(h);
         if (v) {
@@ -1201,15 +1211,11 @@
             const ptCell = document.getElementById('opt_' + h + '_' + p);
             if (ptCell) {
               const v = o[p] * playerCount - hSum;
-              const _sign = ptCell.querySelector('.o-pt-sign');
-              const _num = ptCell.querySelector('.o-pt-num');
               if (v !== 0) {
-                if (_sign) _sign.textContent = v > 0 ? '+' : '-';
-                if (_num) _num.textContent = Math.abs(v);
+                ptCell.textContent = (v > 0 ? '+' : '') + v;
                 ptCell.style.color = v > 0 ? '#1d9e75' : '#e24b4a';
               } else {
-                if (_sign) _sign.textContent = '';
-                if (_num) _num.textContent = '-';
+                ptCell.textContent = '-';
                 ptCell.style.color = '#aaa';
               }
             }
@@ -1217,11 +1223,7 @@
         } else {
           for (let p = 0; p < playerCount; p++) {
             const ptCell = document.getElementById('opt_' + h + '_' + p);
-            if (ptCell) {
-              const _s = ptCell.querySelector('.o-pt-sign'); if (_s) _s.textContent = '';
-              const _n = ptCell.querySelector('.o-pt-num'); if (_n) _n.textContent = '-';
-              ptCell.style.color = '#aaa';
-            }
+            if (ptCell) { ptCell.textContent = '-'; ptCell.style.color = '#aaa'; }
           }
         }
       }
