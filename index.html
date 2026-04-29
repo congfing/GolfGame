@@ -178,6 +178,10 @@
     display: block; font-size: 9px; font-weight: 700;
     background: rgba(0,0,0,0.08); color: #555;
     border-radius: 3px; padding: 1px 3px; margin-top: 2px;
+    min-height: 13px; line-height: 11px;
+  }
+  .order-badge:empty {
+    background: transparent;
     min-width: 12px; text-align: center;
   }
 
@@ -280,7 +284,7 @@
     table.scores select { min-width: 40px; font-size: 10px; padding: 1px; }
     .result-grid { grid-template-columns: repeat(2, 1fr); }
     .result-total { font-size: 20px; }
-    .order-badge { display: block; font-size: 8px; padding: 1px 2px; }
+    .order-badge { display: block; font-size: 8px; padding: 1px 2px; min-height: 12px; line-height: 10px; }
     .opt-grid { grid-template-columns: 1fr; }
     .round-info { grid-template-columns: repeat(2, 1fr); }
   }
