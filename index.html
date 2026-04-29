@@ -163,6 +163,8 @@
   .team1-cell { border-left: 2px solid rgba(41,121,255,0.25) !important; }
   .team2-cell { border-left: 2px solid rgba(255,109,0,0.25) !important; }
 
+  /* スコア合計セル内の区切り線 */
+  hr.score-divider { border: none; border-top: 1px solid #d0cec5; margin: 2px 0; }
   /* 得点列 */
   .vscore-col { font-weight: 700; font-size: 13px; min-width: 44px; }
   .vscore-t1 { color: #1a5fc8; background: #eef3ff; }
@@ -1857,7 +1859,7 @@
     row += '<td class="par-col" id="spar-' + id + '">-</td>';
     for (let p = 0; p < playerCount; p++) {
       row += '<td class="order-td"></td>';
-      row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;"><span id="stroke-' + id + '-' + p + '">-</span><br><span id="vsub-' + id + '-' + p + '" style="font-size:10px;font-weight:700;color:#888;">-</span></td>';
+      row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;"><span id="stroke-' + id + '-' + p + '">-</span><hr class="score-divider"><span id="vsub-' + id + '-' + p + '" style="font-weight:700;color:#888;">-</span></td>';
     }
     if (ghostPlayer) row += '<td class="ghost-col">-</td>';
     if (showVegas) row += '<td class="vscore-col" id="svegas-' + id + '">-</td>';
