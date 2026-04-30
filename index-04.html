@@ -278,7 +278,7 @@ table.stbl select {
 .team2-cell input[type="number"] { color: rgba(220,100,0,0.9) !important; font-weight: 600; }
 /* Round boundary row */
 tr.round-sep td {
-  border-top: 2px solid rgba(29,158,117,0.35) !important;
+  border-top: 1px solid rgba(29,158,117,0.35) !important;
 }
 /* Round label column */
 .round-label-cell {
@@ -391,11 +391,11 @@ tr.round-sep td {
   /* 合計行 */
   .subtotal-row td {
     background: rgba(29,158,117,0.08) !important; font-weight: 600;
-    border-top: 2px solid rgba(29,158,117,0.35) !important; font-size: 11px;
+    border-top: 1px solid rgba(29,158,117,0.35) !important; font-size: 11px;
   }
   .total-row td {
     background: rgba(29,158,117,0.16) !important; font-weight: 700;
-    border-top: 2px solid rgba(29,158,117,0.6) !important; font-size: 12px;
+    border-top: 1px solid rgba(29,158,117,0.6) !important; font-size: 12px;
   }
   .subtotal-row .h-col, .total-row .h-col {
     color: var(--green); font-size: 11px; white-space: nowrap;
@@ -1518,7 +1518,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
       tbody += '</tr>';
     }
     tbody += '</tbody>';
-    let tfoot = '<tfoot><tr style="background:rgba(29,158,117,0.16); font-weight:700; border-top:2px solid rgba(29,158,117,0.5);">';
+    let tfoot = '<tfoot><tr style="background:rgba(29,158,117,0.16); font-weight:700; border-top:1px solid rgba(29,158,117,0.5);">';
     tfoot += '<td class="h-col" style="color:#1d9e75;">合計</td><td class="par-col">-</td>';
     for (let p = 0; p < playerCount; p++) {
       tfoot += '<td id="ototal_' + p + '" style="color:#888;">-</td>';
