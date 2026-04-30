@@ -278,7 +278,7 @@ table.stbl select {
 .team2-cell input[type="number"] { color: rgba(220,100,0,0.9) !important; font-weight: 600; }
 /* Round boundary row */
 tr.round-sep td {
-  border-top: 2px solid rgba(29,158,117,0.35) !important;
+  border-top: 1px solid rgba(29,158,117,0.35) !important;
 }
 /* Round label column */
 .round-label-cell {
@@ -402,15 +402,16 @@ tr.round-sep td {
   /* 合計行 */
   .subtotal-row td {
     background: rgba(29,158,117,0.08) !important; font-weight: 600;
-    border-top: 2px solid rgba(29,158,117,0.35) !important; font-size: 11px;
+    border-top: 1px solid rgba(29,158,117,0.35) !important; font-size: 11px;
   }
   .total-row td {
     background: rgba(29,158,117,0.16) !important; font-weight: 700;
-    border-top: 2px solid rgba(29,158,117,0.6) !important; font-size: 12px;
+    border-top: 1px solid rgba(29,158,117,0.6) !important; font-size: 12px;
   }
   .subtotal-row .h-col, .total-row .h-col {
     color: var(--green); font-size: 11px; white-space: nowrap;
   }
+  hr.score-divider { border: none; border-top: 1px solid #d0cec5; margin: 2px 0; }
   .special-btns-row {
     display: flex; gap: 2px; margin-top: 2px; justify-content: center;
   }
@@ -1280,7 +1281,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     row += '<td class="h-col">' + label + '</td>';
     row += '<td class="par-col" id="spar-' + id + '">-</td>';
     for (let p = 0; p < playerCount; p++) {
-      row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;"><span id="stroke-' + id + '-' + p + '">-</span><br><span id="vsub-' + id + '-' + p + '" style="font-size:10px;font-weight:700;color:#888;">-</span></td>';
+      row += '<td id="sscore-' + id + '-' + p + '" style="text-align:center;"><span id="stroke-' + id + '-' + p + '">-</span><hr class="score-divider"><span id="vsub-' + id + '-' + p + '" style="font-weight:700;color:#888;">-</span></td>';
     }
     if (ghostPlayer) row += '<td class="ghost-col">-</td>';
     row += '</tr>';
@@ -1505,7 +1506,6 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
           tbody += '<td id="ototal_h1_' + p + '" style="font-weight:700;color:#888;">-</td>';
         }
         tbody += '</tr>';
-        tbody += '<tr style="background:rgba(0,0,0,0.03);"><td class="h-col" colspan="' + (playerCount + 2) + '" style="text-align:left;padding-left:6px;font-size:10px;color:#888;">── 後半 ──</td></tr>';
       }
     }
     // 18ホール時：後半小計
@@ -1517,7 +1517,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
       tbody += '</tr>';
     }
     tbody += '</tbody>';
-    let tfoot = '<tfoot><tr style="background:rgba(29,158,117,0.16); font-weight:700; border-top:2px solid rgba(29,158,117,0.5);">';
+    let tfoot = '<tfoot><tr style="background:rgba(29,158,117,0.16); font-weight:700; border-top:1px solid rgba(29,158,117,0.5);">';
     tfoot += '<td class="h-col" style="color:#1d9e75;">合計</td><td class="par-col">-</td>';
     for (let p = 0; p < playerCount; p++) {
       tfoot += '<td id="ototal_' + p + '" style="color:#888;">-</td>';
