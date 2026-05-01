@@ -292,8 +292,15 @@ body {
   <div class="bulb-row" id="bRow2"></div>
 
   <div class="start-section">
-    <button class="start-btn" id="startBtn" onclick="doStart()">START</button>
-    <div class="start-hint" id="startHint">3つ揃えて START !</div>
+    <button class="start-btn ready blink" id="startBtn" onclick="doStart()">START</button>
+    <div class="start-hint ready-hint" id="startHint">v13 でスタート！</div>
+  </div>
+
+  <!-- ダイレクトリンク -->
+  <div style="display:flex;justify-content:center;gap:8px;padding:8px 0 4px;">
+    <a href="https://congfing.github.io/GolfGame/index13.html"     style="color:#ffd700;font-size:12px;font-weight:700;text-decoration:none;padding:5px 10px;border:1px solid rgba(200,150,0,0.5);border-radius:8px;background:rgba(0,0,0,0.35);">v13</a>
+    <a href="https://congfing.github.io/GolfGame/index_app08.html" style="color:#ffd700;font-size:12px;font-weight:700;text-decoration:none;padding:5px 10px;border:1px solid rgba(200,150,0,0.5);border-radius:8px;background:rgba(0,0,0,0.35);">v08</a>
+    <a href="https://congfing.github.io/GolfGame/index_app11.html" style="color:#ffd700;font-size:12px;font-weight:700;text-decoration:none;padding:5px 10px;border:1px solid rgba(200,150,0,0.5);border-radius:8px;background:rgba(0,0,0,0.35);">v11</a>
   </div>
 
   <div class="bulb-row" id="bRow3"></div>
@@ -305,9 +312,9 @@ body {
    ゲームデータ
 ────────────────────────────────────── */
 const ITEMS = [
-  { name:'テキスト版', icon:'📋', url:'https://congfing.github.io/GolfGame/' },
-  { name:'APP版',     icon:'📱', url:'https://congfing.github.io/GolfGame/index-04.html' },
-  { name:'APP\ndefault', icon:'🏌️', url:'https://congfing.github.io/GolfGame/index-11.html' }
+  { name:'v13\nTEXT', icon:'📋', url:'https://congfing.github.io/GolfGame/index13.html' },
+  { name:'v08\nAPP',  icon:'📱', url:'https://congfing.github.io/GolfGame/index_app08.html' },
+  { name:'v11\nAPP',  icon:'🏌️', url:'https://congfing.github.io/GolfGame/index_app11.html' }
 ];
 
 const N      = ITEMS.length;  // 3
@@ -348,27 +355,26 @@ function tickBulbs() {
 setTimeout(tickBulbs, 700);
 
 /* ──────────────────────────────────────
-   Reel クラス（物理エンジン版）
-   pos = スクロール位置（ピクセル）
-   vel = 速度（px/秒）、指の勢いで慣性スピン
+   Reel クラス（各リール独自の itemH/vport）
 ────────────────────────────────────── */
 class Reel {
   constructor(vpId, trackId, startItemIdx) {
-    this.vp    = document.getElementById(vpId);
-    this.track = document.getElementById(trackId);
-    // 中央コピーの startItemIdx 番目を初期位置に
-    this.pos   = (N + startItemIdx) * ITEM_H;
-    this.vel   = 0;   // px/秒
-    this.animId = null;
-    this.dragging = false;
+    this.vp           = document.getElementById(vpId);
+    this.track        = document.getElementById(trackId);
+    this.startItemIdx = startItemIdx;
+    this.itemH        = ITEM_H;  // CSS固定値 84px
+    this.vport        = VPORT;   // CSS固定値 252px
+    this.pos          = (N + startItemIdx) * this.itemH;
+    this.vel          = 0;
+    this.animId       = null;
+    this.dragging     = false;
     this._render();
     this._draw(false);
     this._bind();
   }
 
-  /* 現在選択中のアイテムインデックス (0-2) */
   sel() {
-    return ((Math.round(this.pos / ITEM_H) % N) + N) % N;
+    return ((Math.round(this.pos / this.itemH) % N) + N) % N;
   }
 
   _render() {
@@ -380,51 +386,42 @@ class Reel {
     ).join('');
   }
 
-  /* pos をビューポート中央に変換 */
-  _ty() { return VPORT / 2 - ITEM_H / 2 - this.pos; }
+  _ty() { return this.vport / 2 - this.itemH / 2 - this.pos; }
 
   _draw(snap = false) {
     this.track.style.transition = snap
       ? 'transform 0.26s cubic-bezier(0.22,1,0.36,1)' : 'none';
     this.track.style.transform = `translateY(${this._ty()}px)`;
-    const selIdx = ((Math.round(this.pos / ITEM_H)) % ALL.length + ALL.length) % ALL.length;
+    const selIdx = ((Math.round(this.pos / this.itemH)) % ALL.length + ALL.length) % ALL.length;
     this.track.querySelectorAll('.reel-item')
       .forEach((el, i) => el.classList.toggle('selected', i === selIdx));
   }
 
-  /* 無限ループ：中央コピー範囲 [N*ITEM_H, 2N*ITEM_H) に保つ */
   _wrap() {
-    const lo = N * ITEM_H, hi = N * 2 * ITEM_H;
-    if (this.pos >= hi) this.pos -= N * ITEM_H;
-    if (this.pos <  lo) this.pos += N * ITEM_H;
+    const lo = N * this.itemH, hi = N * 2 * this.itemH;
+    if (this.pos >= hi) this.pos -= N * this.itemH;
+    if (this.pos <  lo) this.pos += N * this.itemH;
   }
 
   _stopAnim() {
     if (this.animId) { cancelAnimationFrame(this.animId); this.animId = null; }
   }
 
-  /* 慣性スピン → 摩擦で減速 → スナップ */
   _physics(initVel) {
     this._stopAnim();
     this.vel = initVel;
     let lastT = performance.now();
-
     const step = (now) => {
       const dt = Math.min((now - lastT) / 1000, 0.05);
       lastT = now;
-
       this.pos += this.vel * dt;
-      // 摩擦：0.92^(dt*60) → 自然な減速カーブ
       this.vel *= Math.pow(0.92, dt * 60);
-
       this._wrap();
       this._draw(false);
-
       if (Math.abs(this.vel) > 18) {
         this.animId = requestAnimationFrame(step);
       } else {
-        // 最近アイテムにスナップ
-        this.pos = Math.round(this.pos / ITEM_H) * ITEM_H;
+        this.pos = Math.round(this.pos / this.itemH) * this.itemH;
         this._wrap();
         this._draw(true);
         this.vel = 0;
@@ -437,42 +434,31 @@ class Reel {
 
   _bind() {
     let startPos, startY, lastY, lastT, velSmooth;
-
     const onStart = (y) => {
       this._stopAnim();
-      startPos  = this.pos;
-      startY    = lastY = y;
-      lastT     = performance.now();
-      velSmooth = 0;
+      startPos = this.pos; startY = lastY = y;
+      lastT = performance.now(); velSmooth = 0;
       this.dragging = true;
     };
-
     const onMove = (y) => {
       if (!this.dragging) return;
       const now = performance.now(), dt = now - lastT;
       if (dt > 1) {
-        // 指速度（上方向＝正 = pos増加）を指数移動平均でスムーズに
-        const raw = -(y - lastY) / dt * 1000; // px/秒
+        const raw = -(y - lastY) / dt * 1000;
         velSmooth = velSmooth * 0.55 + raw * 0.45;
       }
       lastY = y; lastT = performance.now();
-
       this.pos = startPos + (startY - y);
-      this._wrap();
-      this._draw(false);
+      this._wrap(); this._draw(false);
     };
-
     const onEnd = () => {
       if (!this.dragging) return;
       this.dragging = false;
       this._physics(velSmooth);
     };
-
     this.vp.addEventListener('touchstart', e => { onStart(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
     this.vp.addEventListener('touchmove',  e => { onMove(e.touches[0].clientY);  e.preventDefault(); }, { passive: false });
     this.vp.addEventListener('touchend',   () => onEnd(), { passive: true });
-
-    // デスクトップ確認用（マウス）
     let md = false;
     this.vp.addEventListener('mousedown', e => { md = true; onStart(e.clientY); e.preventDefault(); });
     window.addEventListener('mousemove',  e => { if (md) onMove(e.clientY); });
@@ -480,36 +466,30 @@ class Reel {
   }
 }
 
-/* ── リール生成（初期位置バラバラ） ── */
+/* ── リール生成（全て index 0 = v13 で揃えてスタート） ── */
 const reels = [
-  new Reel('rv0','rt0', 0),  // テキスト版
-  new Reel('rv1','rt1', 1),  // APP版
-  new Reel('rv2','rt2', 2),  // APP default
+  new Reel('rv0','rt0', 0),
+  new Reel('rv1','rt1', 0),
+  new Reel('rv2','rt2', 0),
 ];
 
-/* ── 全リール一致チェック ── */
+/* ── 選択チェック（reel[0]の選択でSTARTを常に有効） ── */
 function checkAll() {
-  const s = reels.map(r => r.sel());
-  const ok = s[0] === s[1] && s[1] === s[2];
+  const s   = reels[0].sel();
   const btn  = document.getElementById('startBtn');
   const hint = document.getElementById('startHint');
   const wl   = document.getElementById('winLine');
-
-  btn.classList.toggle('ready',  ok);
-  btn.classList.toggle('blink',  ok);
-  hint.classList.toggle('ready-hint', ok);
-  wl.classList.toggle('matched', ok);
-
-  hint.textContent = ok
-    ? ITEMS[s[0]].name.replace('\n',' ') + ' でスタート！'
-    : '3つ揃えて START !';
+  const name = (s >= 0 && s < ITEMS.length) ? ITEMS[s].name.replace('\n',' ') : '';
+  btn.classList.add('ready');
+  btn.classList.add('blink');
+  hint.classList.add('ready-hint');
+  wl.classList.add('matched');
+  hint.textContent = name ? name + ' でスタート！' : 'START !';
 }
 
 function doStart() {
   const s = reels[0].sel();
-  if (reels.every(r => r.sel() === s)) {
-    window.location.href = ITEMS[s].url;
-  }
+  if (s >= 0 && s < ITEMS.length) window.location.href = ITEMS[s].url;
 }
 
 checkAll();
