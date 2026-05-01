@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>GOLF GAME</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+body {
+  background: #000;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+  overflow: hidden;
+}
+
+/* ── スロット画像コンテナ ── */
+.slot-wrap {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+}
+
+.slot-img {
+  width: 100%;
+  height: 310px;
+  object-fit: cover;
+  object-position: center 22%;
+  display: block;
+}
+
+/* ── リールオーバーレイ（3列） ── */
+.reels-overlay {
+  position: absolute;
+  /* 「7」が並ぶエリアに合わせて配置 */
+  top: 6%;
+  left: 9%;
+  right: 9%;
+  bottom: 14%;
+  display: flex;
+  gap: 2.2%;
+  align-items: stretch;
+}
+
+/* ── 各リールビューポート ── */
+.reel-vp {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  border-radius: 4px;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+  /* スロットレール感：微妙に暗い縦線 */
+  box-shadow: inset 2px 0 6px rgba(0,0,0,0.5), inset -2px 0 6px rgba(0,0,0,0.5);
+}
+
+/* 上下フェード（機械感） */
+.reel-vp::before, .reel-vp::after {
+  content: ''; position: absolute; left: 0; right: 0; z-index: 3; pointer-events: none;
+}
+.reel-vp::before {
+  top: 0; height: 30%;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%);
+}
+.reel-vp::after {
+  bottom: 0; height: 30%;
+  background: linear-gradient(to top, rgba(0,0,0,0.75) 0%, transparent 100%);
+}
+
+.reel-track {
+  position: absolute;
+  left: 0; right: 0;
+  will-change: transform;
+}
+
+/* ── スロットタイル（7の代わり） ── */
+.reel-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: rgba(8,4,0,0.82);
+  border-bottom: 1px solid rgba(80,50,0,0.4);
+}
+.ri-icon {
+  font-size: 34px;
+  line-height: 1;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+}
+.ri-name {
+  font-size: 9px;
+  font-weight: 900;
+  color: #ffd700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.9);
+}
+
+/* 選択中タイル：7のような輝き */
+.reel-item.selected {
+  background: rgba(18,6,0,0.88);
+  box-shadow:
+    inset 0 0 18px rgba(255,100,0,0.35),
+    inset 0 0  6px rgba(255,200,0,0.2);
+}
+.reel-item.selected .ri-icon {
+  filter: drop-shadow(0 0 8px rgba(255,120,0,0.9)) drop-shadow(0 2px 4px rgba(0,0,0,0.8));
+}
+.reel-item.selected .ri-name {
+  color: #fff;
+  text-shadow: 0 0 8px rgba(255,200,0,0.9);
+}
+
+/* ── STARTボタンエリア ── */
+.start-area {
+  width: 100%;
+  max-width: 480px;
+  background: linear-gradient(180deg, #1a0800 0%, #0a0300 100%);
+  padding: 14px 0 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border-top: 1px solid rgba(200,150,0,0.25);
+}
+
+.start-btn {
+  width: 200px; height: 56px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, #444 0%, #222 100%);
+  border: 3px solid rgba(120,100,60,0.4);
+  color: rgba(180,160,100,0.4);
+  font-size: 20px; font-weight: 900;
+  letter-spacing: 0.22em;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.7);
+  transition: all 0.3s;
+  position: relative; overflow: hidden;
+}
+.start-btn.ready {
+  background: linear-gradient(180deg, #cc1a1a 0%, #8b0a0a 100%);
+  border: 3px solid #f5c518;
+  color: #ffd700;
+  cursor: pointer; pointer-events: auto;
+  box-shadow:
+    0 4px 24px rgba(180,0,0,0.6),
+    0 0 0 1px #c8960c,
+    inset 0 1px 0 rgba(255,220,0,0.3);
+  text-shadow: 0 0 14px rgba(255,200,0,0.9), 0 1px 2px rgba(0,0,0,0.9);
+}
+.start-btn.ready::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(255,220,0,0.22) 0%, transparent 55%);
+  border-radius: inherit; pointer-events: none;
+}
+.start-btn.ready:active { transform: scale(0.95); }
+
+@keyframes btnPulse {
+  0%,100% { box-shadow: 0 4px 24px rgba(180,0,0,0.6), 0 0 0 1px #c8960c; }
+  50%      { box-shadow: 0 4px 36px rgba(255,80,0,0.9), 0 0 26px rgba(255,200,0,0.6), 0 0 0 2px #ffd700; }
+}
+.start-btn.blink { animation: btnPulse 0.75s ease-in-out infinite; }
+
+.start-hint {
+  font-size: 11px;
+  color: rgba(255,200,0,0.35);
+  letter-spacing: 0.08em;
+  transition: color 0.3s;
+}
+.start-hint.ready-hint { color: rgba(255,220,0,0.85); }
+</style>
+</head>
+<body>
+
+<!-- スロットマシン画像 + リールオーバーレイ -->
+<div class="slot-wrap">
+  <img class="slot-img" src="slot-bg.jpg" alt="slot machine" draggable="false">
+
+  <div class="reels-overlay">
+    <div class="reel-vp" id="rv0"><div class="reel-track" id="rt0"></div></div>
+    <div class="reel-vp" id="rv1"><div class="reel-track" id="rt1"></div></div>
+    <div class="reel-vp" id="rv2"><div class="reel-track" id="rt2"></div></div>
+  </div>
+</div>
+
+<!-- START ボタン -->
+<div class="start-area">
+  <button class="start-btn" id="startBtn" onclick="doStart()">START</button>
+  <div class="start-hint" id="startHint">3つ揃えて START !</div>
+</div>
+
+<script>
+/* ── ゲームデータ ── */
+const ITEMS = [
+  { name: 'TEXT',    icon: '📋', url: 'https://congfing.github.io/GolfGame/' },
+  { name: 'APP',     icon: '📱', url: 'https://congfing.github.io/GolfGame/index-04.html' },
+  { name: 'DEFAULT', icon: '🏌️', url: 'https://congfing.github.io/GolfGame/index-11.html' }
+];
+
+const N     = ITEMS.length;
+const ALL   = [...ITEMS, ...ITEMS, ...ITEMS]; // 9枚
+let   ITEM_H = 0; // リール高さに応じて動的計算
+let   VPORT  = 0;
+
+/* ──────────────────────────────────────
+   Reel クラス（物理エンジン）
+────────────────────────────────────── */
+class Reel {
+  constructor(vpId, trackId, startItemIdx) {
+    this.vp    = document.getElementById(vpId);
+    this.track = document.getElementById(trackId);
+    this.startItemIdx = startItemIdx;
+    this.pos   = 0;
+    this.vel   = 0;
+    this.animId = null;
+    this.dragging = false;
+  }
+
+  init() {
+    VPORT  = this.vp.clientHeight;
+    ITEM_H = VPORT / 3;
+    this.pos = (N + this.startItemIdx) * ITEM_H;
+    this._render();
+    this._draw(false);
+    this._bind();
+  }
+
+  sel() {
+    return ((Math.round(this.pos / ITEM_H) % N) + N) % N;
+  }
+
+  _render() {
+    this.track.innerHTML = ALL.map((it, i) =>
+      `<div class="reel-item" data-i="${i}" style="height:${ITEM_H}px;">
+         <div class="ri-icon">${it.icon}</div>
+         <div class="ri-name">${it.name}</div>
+       </div>`
+    ).join('');
+  }
+
+  _ty() { return VPORT / 2 - ITEM_H / 2 - this.pos; }
+
+  _draw(snap = false) {
+    this.track.style.transition = snap
+      ? 'transform 0.26s cubic-bezier(0.22,1,0.36,1)' : 'none';
+    this.track.style.transform = `translateY(${this._ty()}px)`;
+    const si = ((Math.round(this.pos / ITEM_H)) % ALL.length + ALL.length) % ALL.length;
+    this.track.querySelectorAll('.reel-item')
+      .forEach((el, i) => el.classList.toggle('selected', i === si));
+  }
+
+  _wrap() {
+    const lo = N * ITEM_H, hi = N * 2 * ITEM_H;
+    if (this.pos >= hi) this.pos -= N * ITEM_H;
+    if (this.pos <  lo) this.pos += N * ITEM_H;
+  }
+
+  _stopAnim() {
+    if (this.animId) { cancelAnimationFrame(this.animId); this.animId = null; }
+  }
+
+  _physics(initVel) {
+    this._stopAnim();
+    this.vel = initVel;
+    let lastT = performance.now();
+
+    const step = (now) => {
+      const dt = Math.min((now - lastT) / 1000, 0.05);
+      lastT = now;
+      this.pos += this.vel * dt;
+      this.vel *= Math.pow(0.92, dt * 60);
+      this._wrap();
+      this._draw(false);
+
+      if (Math.abs(this.vel) > 18) {
+        this.animId = requestAnimationFrame(step);
+      } else {
+        this.pos = Math.round(this.pos / ITEM_H) * ITEM_H;
+        this._wrap();
+        this._draw(true);
+        this.vel = 0;
+        setTimeout(() => checkAll(), 280);
+        checkAll();
+      }
+    };
+    this.animId = requestAnimationFrame(step);
+  }
+
+  _bind() {
+    let startPos, startY, lastY, lastT, velSmooth;
+
+    const onStart = (y) => {
+      this._stopAnim();
+      startPos = this.pos; startY = lastY = y;
+      lastT = performance.now(); velSmooth = 0;
+      this.dragging = true;
+    };
+    const onMove = (y) => {
+      if (!this.dragging) return;
+      const now = performance.now(), dt = now - lastT;
+      if (dt > 1) {
+        const raw = -(y - lastY) / dt * 1000;
+        velSmooth = velSmooth * 0.55 + raw * 0.45;
+      }
+      lastY = y; lastT = performance.now();
+      this.pos = startPos + (startY - y);
+      this._wrap(); this._draw(false);
+    };
+    const onEnd = () => {
+      if (!this.dragging) return;
+      this.dragging = false;
+      this._physics(velSmooth);
+    };
+
+    this.vp.addEventListener('touchstart', e => { onStart(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+    this.vp.addEventListener('touchmove',  e => { onMove(e.touches[0].clientY);  e.preventDefault(); }, { passive: false });
+    this.vp.addEventListener('touchend',   () => onEnd(), { passive: true });
+
+    let md = false;
+    this.vp.addEventListener('mousedown', e => { md = true; onStart(e.clientY); e.preventDefault(); });
+    window.addEventListener('mousemove',  e => { if (md) onMove(e.clientY); });
+    window.addEventListener('mouseup',    () => { if (md) { md = false; onEnd(); } });
+  }
+}
+
+/* ── リール生成・初期化 ── */
+const reels = [
+  new Reel('rv0','rt0', 0),
+  new Reel('rv1','rt1', 1),
+  new Reel('rv2','rt2', 2),
+];
+
+/* 画像ロード後にビューポートサイズが確定してから初期化 */
+window.addEventListener('load', () => {
+  reels.forEach(r => r.init());
+  checkAll();
+});
+
+/* ── 一致チェック ── */
+function checkAll() {
+  const s  = reels.map(r => r.sel());
+  const ok = s[0] === s[1] && s[1] === s[2];
+  const btn  = document.getElementById('startBtn');
+  const hint = document.getElementById('startHint');
+  btn.classList.toggle('ready', ok);
+  btn.classList.toggle('blink', ok);
+  hint.classList.toggle('ready-hint', ok);
+  hint.textContent = ok
+    ? ITEMS[s[0]].name + ' でスタート！'
+    : '3つ揃えて START !';
+}
+
+function doStart() {
+  const s = reels[0].sel();
+  if (reels.every(r => r.sel() === s)) window.location.href = ITEMS[s].url;
+}
+</script>
+</body>
+</html>
