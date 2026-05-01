@@ -194,74 +194,75 @@ body {
 
 <!-- START ボタン -->
 <div class="start-area">
-  <button class="start-btn" id="startBtn" onclick="doStart()">START</button>
-  <div class="start-hint" id="startHint">3つ揃えて START !</div>
+  <button class="start-btn ready blink" id="startBtn" onclick="doStart()">START</button>
+  <div class="start-hint ready-hint" id="startHint">v13 でスタート！</div>
 </div>
 
 <script>
 /* ── ゲームデータ ── */
 const ITEMS = [
-  { name: 'TEXT',    icon: '📋', url: 'https://congfing.github.io/GolfGame/' },
-  { name: 'APP',     icon: '📱', url: 'https://congfing.github.io/GolfGame/index-04.html' },
-  { name: 'DEFAULT', icon: '🏌️', url: 'https://congfing.github.io/GolfGame/index-11.html' }
+  { name: 'v13',  icon: '📋', url: 'https://congfing.github.io/GolfGame/index13.html' },
+  { name: 'v08',  icon: '📱', url: 'https://congfing.github.io/GolfGame/index_app08.html' },
+  { name: 'v11',  icon: '🏌️', url: 'https://congfing.github.io/GolfGame/index_app11.html' }
 ];
 
-const N     = ITEMS.length;
-const ALL   = [...ITEMS, ...ITEMS, ...ITEMS]; // 9枚
-let   ITEM_H = 0; // リール高さに応じて動的計算
-let   VPORT  = 0;
+const N   = ITEMS.length;
+const ALL = [...ITEMS, ...ITEMS, ...ITEMS]; // 9枚
 
 /* ──────────────────────────────────────
-   Reel クラス（物理エンジン）
+   Reel クラス（各リールが独自の itemH/vport を持つ）
 ────────────────────────────────────── */
 class Reel {
   constructor(vpId, trackId, startItemIdx) {
-    this.vp    = document.getElementById(vpId);
-    this.track = document.getElementById(trackId);
+    this.vp           = document.getElementById(vpId);
+    this.track        = document.getElementById(trackId);
     this.startItemIdx = startItemIdx;
-    this.pos   = 0;
-    this.vel   = 0;
-    this.animId = null;
-    this.dragging = false;
+    this.itemH        = 0;
+    this.vport        = 0;
+    this.pos          = 0;
+    this.vel          = 0;
+    this.animId       = null;
+    this.dragging     = false;
   }
 
   init() {
-    VPORT  = this.vp.clientHeight;
-    ITEM_H = VPORT / 3;
-    this.pos = (N + this.startItemIdx) * ITEM_H;
+    this.vport = this.vp.clientHeight || 248; // fallback
+    this.itemH = this.vport / 3;
+    this.pos   = (N + this.startItemIdx) * this.itemH;
     this._render();
     this._draw(false);
     this._bind();
   }
 
   sel() {
-    return ((Math.round(this.pos / ITEM_H) % N) + N) % N;
+    if (!this.itemH) return 0;
+    return ((Math.round(this.pos / this.itemH) % N) + N) % N;
   }
 
   _render() {
     this.track.innerHTML = ALL.map((it, i) =>
-      `<div class="reel-item" data-i="${i}" style="height:${ITEM_H}px;">
+      `<div class="reel-item" data-i="${i}" style="height:${this.itemH}px;">
          <div class="ri-icon">${it.icon}</div>
          <div class="ri-name">${it.name}</div>
        </div>`
     ).join('');
   }
 
-  _ty() { return VPORT / 2 - ITEM_H / 2 - this.pos; }
+  _ty() { return this.vport / 2 - this.itemH / 2 - this.pos; }
 
   _draw(snap = false) {
     this.track.style.transition = snap
       ? 'transform 0.26s cubic-bezier(0.22,1,0.36,1)' : 'none';
     this.track.style.transform = `translateY(${this._ty()}px)`;
-    const si = ((Math.round(this.pos / ITEM_H)) % ALL.length + ALL.length) % ALL.length;
+    const si = ((Math.round(this.pos / this.itemH)) % ALL.length + ALL.length) % ALL.length;
     this.track.querySelectorAll('.reel-item')
       .forEach((el, i) => el.classList.toggle('selected', i === si));
   }
 
   _wrap() {
-    const lo = N * ITEM_H, hi = N * 2 * ITEM_H;
-    if (this.pos >= hi) this.pos -= N * ITEM_H;
-    if (this.pos <  lo) this.pos += N * ITEM_H;
+    const lo = N * this.itemH, hi = N * 2 * this.itemH;
+    if (this.pos >= hi) this.pos -= N * this.itemH;
+    if (this.pos <  lo) this.pos += N * this.itemH;
   }
 
   _stopAnim() {
@@ -272,7 +273,6 @@ class Reel {
     this._stopAnim();
     this.vel = initVel;
     let lastT = performance.now();
-
     const step = (now) => {
       const dt = Math.min((now - lastT) / 1000, 0.05);
       lastT = now;
@@ -280,11 +280,10 @@ class Reel {
       this.vel *= Math.pow(0.92, dt * 60);
       this._wrap();
       this._draw(false);
-
       if (Math.abs(this.vel) > 18) {
         this.animId = requestAnimationFrame(step);
       } else {
-        this.pos = Math.round(this.pos / ITEM_H) * ITEM_H;
+        this.pos = Math.round(this.pos / this.itemH) * this.itemH;
         this._wrap();
         this._draw(true);
         this.vel = 0;
@@ -297,7 +296,6 @@ class Reel {
 
   _bind() {
     let startPos, startY, lastY, lastT, velSmooth;
-
     const onStart = (y) => {
       this._stopAnim();
       startPos = this.pos; startY = lastY = y;
@@ -320,11 +318,9 @@ class Reel {
       this.dragging = false;
       this._physics(velSmooth);
     };
-
     this.vp.addEventListener('touchstart', e => { onStart(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
     this.vp.addEventListener('touchmove',  e => { onMove(e.touches[0].clientY);  e.preventDefault(); }, { passive: false });
     this.vp.addEventListener('touchend',   () => onEnd(), { passive: true });
-
     let md = false;
     this.vp.addEventListener('mousedown', e => { md = true; onStart(e.clientY); e.preventDefault(); });
     window.addEventListener('mousemove',  e => { if (md) onMove(e.clientY); });
@@ -332,36 +328,38 @@ class Reel {
   }
 }
 
-/* ── リール生成・初期化 ── */
+/* ── リール生成（全て index 0 = v13 で揃えてスタート） ── */
 const reels = [
   new Reel('rv0','rt0', 0),
-  new Reel('rv1','rt1', 1),
-  new Reel('rv2','rt2', 2),
+  new Reel('rv1','rt1', 0),
+  new Reel('rv2','rt2', 0),
 ];
 
-/* 画像ロード後にビューポートサイズが確定してから初期化 */
+/* レイアウト確定後に初期化（2フレーム待機） */
 window.addEventListener('load', () => {
-  reels.forEach(r => r.init());
-  checkAll();
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      reels.forEach(r => r.init());
+      checkAll();
+    });
+  });
 });
 
-/* ── 一致チェック ── */
+/* ── 選択チェック（reel[0]の選択でSTARTを常に有効） ── */
 function checkAll() {
-  const s  = reels.map(r => r.sel());
-  const ok = s[0] === s[1] && s[1] === s[2];
+  const s    = reels[0].sel();
   const btn  = document.getElementById('startBtn');
   const hint = document.getElementById('startHint');
-  btn.classList.toggle('ready', ok);
-  btn.classList.toggle('blink', ok);
-  hint.classList.toggle('ready-hint', ok);
-  hint.textContent = ok
-    ? ITEMS[s[0]].name + ' でスタート！'
-    : '3つ揃えて START !';
+  const name = (s >= 0 && s < ITEMS.length) ? ITEMS[s].name : 'v13';
+  btn.classList.add('ready');
+  btn.classList.add('blink');
+  hint.classList.add('ready-hint');
+  hint.textContent = name + ' でスタート！';
 }
 
 function doStart() {
   const s = reels[0].sel();
-  if (reels.every(r => r.sel() === s)) window.location.href = ITEMS[s].url;
+  if (s >= 0 && s < ITEMS.length) window.location.href = ITEMS[s].url;
 }
 </script>
 </body>
