@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>GOLF GAME</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --red:  #a80e0e;
+  --red2: #cc1a1a;
+  --gold: #f5c518;
+  --gold2:#ffd700;
+  --gold3:#c8960c;
+  --dark: #120600;
+}
+body {
+  background: var(--dark);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+}
+
+/* ── サンバースト背景 ── */
+.sunburst {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    repeating-conic-gradient(
+      from 0deg at 50% 45%,
+      rgba(110,50,5,0.6)  0deg 9deg,
+      rgba(12,4,0,0.6)    9deg 18deg
+    ),
+    radial-gradient(ellipse 90% 80% at 50% 45%, #2a1000 0%, #060100 100%);
+}
+.sunburst::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse 75% 65% at 50% 45%, transparent 25%, rgba(0,0,0,0.65) 100%);
+}
+
+/* ── マシン本体 ── */
+.machine {
+  position: relative; z-index: 1;
+  width: 300px;
+  background: linear-gradient(175deg, #cc1a1a 0%, #8b0a0a 45%, #6e0707 100%);
+  border-radius: 22px;
+  border: 3px solid var(--gold3);
+  box-shadow:
+    0 0 0 1px rgba(255,210,0,0.25),
+    inset 0 2px 0 rgba(255,210,0,0.22),
+    inset 0 -2px 0 rgba(0,0,0,0.5),
+    0 24px 60px rgba(0,0,0,0.85),
+    0 0 40px rgba(0,0,0,0.6);
+  padding: 14px 12px 16px;
+  overflow: hidden;
+}
+/* 上半分の光沢 */
+.machine::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 45%;
+  background: linear-gradient(to bottom, rgba(255,200,0,0.07), transparent);
+  pointer-events: none;
+}
+
+/* ── ボルブ（電球）行 ── */
+.bulb-row {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  padding: 5px 2px;
+}
+.bulb {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: rgba(255,240,100,0.15);
+  border: 1px solid rgba(200,150,0,0.35);
+  flex-shrink: 0;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.bulb.on {
+  background: #ffffa0;
+  box-shadow: 0 0 5px #ffe000, 0 0 10px rgba(255,210,0,0.45);
+}
+.bulb.on-red {
+  background: #ff8080;
+  box-shadow: 0 0 5px #ff3030, 0 0 10px rgba(255,60,0,0.45);
+}
+
+/* ── タイトル ── */
+.machine-title {
+  text-align: center;
+  padding: 6px 0 4px;
+  border: 2px solid rgba(200,150,0,0.45);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #6e0707 0%, #3d0303 100%);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.4);
+  margin-bottom: 2px;
+}
+.title-main {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--gold2);
+  letter-spacing: 0.18em;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 20px rgba(255,200,0,0.55), 0 1px 0 rgba(0,0,0,1);
+  -webkit-text-stroke: 0.5px rgba(160,90,0,0.6);
+}
+.title-script {
+  font-size: 26px;
+  font-style: italic;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: 0.04em;
+  font-family: Georgia, "Times New Roman", serif;
+  transform: rotate(-6deg) translateX(-4px);
+  display: inline-block;
+  text-shadow:
+    0 2px 6px rgba(0,0,0,0.9),
+    0 0 16px rgba(255,220,180,0.35);
+  margin-top: -2px;
+}
+
+/* ── リールフレーム ── */
+.reels-outer { margin: 8px 0; }
+.reel-light-bar {
+  height: 7px;
+  background: linear-gradient(90deg, #4a0000, #7a0808, #a01010, #c8960c, #a01010, #7a0808, #4a0000);
+  border: 1px solid rgba(200,150,0,0.35);
+  border-radius: 2px;
+}
+.reels-frame {
+  display: flex; gap: 5px;
+  background: linear-gradient(180deg, #0e0400, #060100);
+  border: 2px solid rgba(200,150,0,0.45);
+  border-radius: 8px;
+  padding: 6px 5px;
+  margin: 3px 0;
+  position: relative;
+  box-shadow: inset 0 4px 14px rgba(0,0,0,0.9);
+}
+
+/* 当選ライン */
+.win-line {
+  position: absolute; left: 5px; right: 5px; top: 50%;
+  height: 84px; transform: translateY(-50%);
+  border-top: 1px solid rgba(255,200,0,0.2);
+  border-bottom: 1px solid rgba(255,200,0,0.2);
+  pointer-events: none; z-index: 2; border-radius: 4px;
+  transition: all 0.3s;
+}
+.win-line.matched {
+  background: rgba(255,200,0,0.08);
+  border-color: rgba(255,200,0,0.7);
+  box-shadow: 0 0 14px rgba(255,200,0,0.35);
+}
+
+/* ── 各リール ── */
+.reel-viewport {
+  flex: 1; height: 252px;
+  overflow: hidden; position: relative;
+  border-radius: 5px;
+  cursor: grab; user-select: none; -webkit-user-select: none;
+  touch-action: none;
+}
+/* フェードマスク */
+.reel-viewport::before, .reel-viewport::after {
+  content: ''; position: absolute; left: 0; right: 0;
+  height: 84px; z-index: 3; pointer-events: none;
+}
+.reel-viewport::before {
+  top: 0;
+  background: linear-gradient(to bottom, rgba(6,1,0,0.97) 0%, transparent 100%);
+}
+.reel-viewport::after {
+  bottom: 0;
+  background: linear-gradient(to top, rgba(6,1,0,0.97) 0%, transparent 100%);
+}
+
+.reel-track {
+  position: absolute; left: 0; right: 0;
+  will-change: transform;
+}
+
+/* リールアイテム（プレート） */
+.reel-item {
+  height: 84px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 5px;
+  border-radius: 6px;
+  margin: 0 2px;
+}
+.ri-icon { font-size: 26px; line-height: 1; }
+.ri-name {
+  font-size: 9px; font-weight: 700;
+  color: rgba(255,255,255,0.55);
+  text-align: center; line-height: 1.35;
+  white-space: pre-line; letter-spacing: 0.02em;
+}
+.reel-item.selected {
+  background: rgba(255,210,0,0.1);
+  border: 1px solid rgba(255,200,0,0.2);
+}
+.reel-item.selected .ri-name { color: #fff; }
+
+/* ── STARTボタン ── */
+.start-section {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px;
+  margin-top: 10px;
+}
+.start-btn {
+  width: 190px; height: 54px;
+  border-radius: 27px;
+  background: linear-gradient(180deg, #444 0%, #222 100%);
+  border: 3px solid rgba(100,100,100,0.4);
+  color: rgba(180,180,180,0.4);
+  font-size: 20px; font-weight: 900;
+  letter-spacing: 0.22em;
+  cursor: not-allowed;
+  pointer-events: none;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.7);
+  transition: all 0.3s;
+  position: relative; overflow: hidden;
+}
+.start-btn.ready {
+  background: linear-gradient(180deg, var(--red2) 0%, var(--red) 100%);
+  border: 3px solid var(--gold);
+  color: var(--gold2);
+  cursor: pointer; pointer-events: auto;
+  box-shadow:
+    0 4px 22px rgba(180,0,0,0.55),
+    0 0 0 1px var(--gold3),
+    inset 0 1px 0 rgba(255,220,0,0.3);
+  text-shadow: 0 0 12px rgba(255,200,0,0.9), 0 1px 2px rgba(0,0,0,0.8);
+}
+.start-btn.ready::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: linear-gradient(to bottom, rgba(255,220,0,0.28) 0%, transparent 55%);
+  border-radius: inherit; pointer-events: none;
+}
+.start-btn.ready:active { transform: scale(0.95); }
+
+@keyframes btnPulse {
+  0%,100% { box-shadow: 0 4px 22px rgba(180,0,0,0.55), 0 0 0 1px var(--gold3); }
+  50%      { box-shadow: 0 4px 36px rgba(255,80,0,0.8), 0 0 24px rgba(255,200,0,0.55), 0 0 0 2px var(--gold2); }
+}
+.start-btn.blink { animation: btnPulse 0.75s ease-in-out infinite; }
+
+.start-hint {
+  font-size: 10px; color: rgba(255,200,0,0.3);
+  letter-spacing: 0.1em; text-align: center;
+  transition: color 0.3s;
+}
+.start-hint.ready-hint { color: rgba(255,220,0,0.8); }
+
+/* bulb blink animations */
+@keyframes bOn  { 0%,100%{opacity:1} 50%{opacity:0.1} }
+@keyframes bOn2 { 0%,100%{opacity:0.1} 50%{opacity:1} }
+.bulb.blink-a { animation: bOn  0.35s ease-in-out infinite; }
+.bulb.blink-b { animation: bOn2 0.35s ease-in-out infinite; }
+</style>
+</head>
+<body>
+
+<div class="sunburst"></div>
+
+<div class="machine">
+
+  <div class="bulb-row" id="bRow0"></div>
+
+  <div class="machine-title">
+    <div class="title-main">CASINO</div>
+    <div><span class="title-script">Start</span></div>
+  </div>
+
+  <div class="bulb-row" id="bRow1"></div>
+
+  <div class="reels-outer">
+    <div class="reel-light-bar"></div>
+    <div class="reels-frame">
+      <div class="win-line" id="winLine"></div>
+      <div class="reel-viewport" id="rv0"><div class="reel-track" id="rt0"></div></div>
+      <div class="reel-viewport" id="rv1"><div class="reel-track" id="rt1"></div></div>
+      <div class="reel-viewport" id="rv2"><div class="reel-track" id="rt2"></div></div>
+    </div>
+    <div class="reel-light-bar"></div>
+  </div>
+
+  <div class="bulb-row" id="bRow2"></div>
+
+  <div class="start-section">
+    <button class="start-btn" id="startBtn" onclick="doStart()">START</button>
+    <div class="start-hint" id="startHint">3つ揃えて START !</div>
+  </div>
+
+  <div class="bulb-row" id="bRow3"></div>
+
+</div>
+
+<script>
+/* ──────────────────────────────────────
+   ゲームデータ
+────────────────────────────────────── */
+const ITEMS = [
+  { name:'テキスト版', icon:'📋', url:'https://congfing.github.io/GolfGame/' },
+  { name:'APP版',     icon:'📱', url:'https://congfing.github.io/GolfGame/index-04.html' },
+  { name:'APP\ndefault', icon:'🏌️', url:'https://congfing.github.io/GolfGame/index-11.html' }
+];
+
+const N      = ITEMS.length;  // 3
+const COPIES = 3;
+const ALL    = [...ITEMS, ...ITEMS, ...ITEMS]; // 9枚
+const ITEM_H = 84;
+const VPORT  = 252; // ITEM_H × 3
+
+/* ── 電球生成 ── */
+function makeBulbs(id, count = 16) {
+  const row = document.getElementById(id);
+  for (let i = 0; i < count; i++) {
+    const b = document.createElement('div');
+    b.className = 'bulb' + (i % 2 === 0 ? ' on' : '');
+    row.appendChild(b);
+  }
+}
+['bRow0','bRow1','bRow2','bRow3'].forEach(id => makeBulbs(id));
+
+/* ── 電球アニメーション ── */
+let bulbTick = 0;
+function tickBulbs() {
+  const matched = reels && reels.length === 3 &&
+    reels[0].sel() === reels[1].sel() && reels[1].sel() === reels[2].sel();
+
+  document.querySelectorAll('.bulb').forEach((b, i) => {
+    b.classList.remove('on','on-red','blink-a','blink-b');
+    if (matched) {
+      b.classList.add(i % 2 === 0 ? 'blink-a' : 'blink-b');
+      b.classList.add(i % 2 === 0 ? 'on' : 'on-red');
+    } else {
+      b.classList.add((i + bulbTick) % 2 === 0 ? 'on' : '');
+    }
+  });
+  bulbTick++;
+  setTimeout(tickBulbs, matched ? 350 : 700);
+}
+setTimeout(tickBulbs, 700);
+
+/* ──────────────────────────────────────
+   Reel クラス（物理エンジン版）
+   pos = スクロール位置（ピクセル）
+   vel = 速度（px/秒）、指の勢いで慣性スピン
+────────────────────────────────────── */
+class Reel {
+  constructor(vpId, trackId, startItemIdx) {
+    this.vp    = document.getElementById(vpId);
+    this.track = document.getElementById(trackId);
+    // 中央コピーの startItemIdx 番目を初期位置に
+    this.pos   = (N + startItemIdx) * ITEM_H;
+    this.vel   = 0;   // px/秒
+    this.animId = null;
+    this.dragging = false;
+    this._render();
+    this._draw(false);
+    this._bind();
+  }
+
+  /* 現在選択中のアイテムインデックス (0-2) */
+  sel() {
+    return ((Math.round(this.pos / ITEM_H) % N) + N) % N;
+  }
+
+  _render() {
+    this.track.innerHTML = ALL.map((it, i) =>
+      `<div class="reel-item" data-i="${i}">
+         <div class="ri-icon">${it.icon}</div>
+         <div class="ri-name">${it.name}</div>
+       </div>`
+    ).join('');
+  }
+
+  /* pos をビューポート中央に変換 */
+  _ty() { return VPORT / 2 - ITEM_H / 2 - this.pos; }
+
+  _draw(snap = false) {
+    this.track.style.transition = snap
+      ? 'transform 0.26s cubic-bezier(0.22,1,0.36,1)' : 'none';
+    this.track.style.transform = `translateY(${this._ty()}px)`;
+    const selIdx = ((Math.round(this.pos / ITEM_H)) % ALL.length + ALL.length) % ALL.length;
+    this.track.querySelectorAll('.reel-item')
+      .forEach((el, i) => el.classList.toggle('selected', i === selIdx));
+  }
+
+  /* 無限ループ：中央コピー範囲 [N*ITEM_H, 2N*ITEM_H) に保つ */
+  _wrap() {
+    const lo = N * ITEM_H, hi = N * 2 * ITEM_H;
+    if (this.pos >= hi) this.pos -= N * ITEM_H;
+    if (this.pos <  lo) this.pos += N * ITEM_H;
+  }
+
+  _stopAnim() {
+    if (this.animId) { cancelAnimationFrame(this.animId); this.animId = null; }
+  }
+
+  /* 慣性スピン → 摩擦で減速 → スナップ */
+  _physics(initVel) {
+    this._stopAnim();
+    this.vel = initVel;
+    let lastT = performance.now();
+
+    const step = (now) => {
+      const dt = Math.min((now - lastT) / 1000, 0.05);
+      lastT = now;
+
+      this.pos += this.vel * dt;
+      // 摩擦：0.92^(dt*60) → 自然な減速カーブ
+      this.vel *= Math.pow(0.92, dt * 60);
+
+      this._wrap();
+      this._draw(false);
+
+      if (Math.abs(this.vel) > 18) {
+        this.animId = requestAnimationFrame(step);
+      } else {
+        // 最近アイテムにスナップ
+        this.pos = Math.round(this.pos / ITEM_H) * ITEM_H;
+        this._wrap();
+        this._draw(true);
+        this.vel = 0;
+        setTimeout(() => checkAll(), 280);
+        checkAll();
+      }
+    };
+    this.animId = requestAnimationFrame(step);
+  }
+
+  _bind() {
+    let startPos, startY, lastY, lastT, velSmooth;
+
+    const onStart = (y) => {
+      this._stopAnim();
+      startPos  = this.pos;
+      startY    = lastY = y;
+      lastT     = performance.now();
+      velSmooth = 0;
+      this.dragging = true;
+    };
+
+    const onMove = (y) => {
+      if (!this.dragging) return;
+      const now = performance.now(), dt = now - lastT;
+      if (dt > 1) {
+        // 指速度（上方向＝正 = pos増加）を指数移動平均でスムーズに
+        const raw = -(y - lastY) / dt * 1000; // px/秒
+        velSmooth = velSmooth * 0.55 + raw * 0.45;
+      }
+      lastY = y; lastT = performance.now();
+
+      this.pos = startPos + (startY - y);
+      this._wrap();
+      this._draw(false);
+    };
+
+    const onEnd = () => {
+      if (!this.dragging) return;
+      this.dragging = false;
+      this._physics(velSmooth);
+    };
+
+    this.vp.addEventListener('touchstart', e => { onStart(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+    this.vp.addEventListener('touchmove',  e => { onMove(e.touches[0].clientY);  e.preventDefault(); }, { passive: false });
+    this.vp.addEventListener('touchend',   () => onEnd(), { passive: true });
+
+    // デスクトップ確認用（マウス）
+    let md = false;
+    this.vp.addEventListener('mousedown', e => { md = true; onStart(e.clientY); e.preventDefault(); });
+    window.addEventListener('mousemove',  e => { if (md) onMove(e.clientY); });
+    window.addEventListener('mouseup',    () => { if (md) { md = false; onEnd(); } });
+  }
+}
+
+/* ── リール生成（初期位置バラバラ） ── */
+const reels = [
+  new Reel('rv0','rt0', 0),  // テキスト版
+  new Reel('rv1','rt1', 1),  // APP版
+  new Reel('rv2','rt2', 2),  // APP default
+];
+
+/* ── 全リール一致チェック ── */
+function checkAll() {
+  const s = reels.map(r => r.sel());
+  const ok = s[0] === s[1] && s[1] === s[2];
+  const btn  = document.getElementById('startBtn');
+  const hint = document.getElementById('startHint');
+  const wl   = document.getElementById('winLine');
+
+  btn.classList.toggle('ready',  ok);
+  btn.classList.toggle('blink',  ok);
+  hint.classList.toggle('ready-hint', ok);
+  wl.classList.toggle('matched', ok);
+
+  hint.textContent = ok
+    ? ITEMS[s[0]].name.replace('\n',' ') + ' でスタート！'
+    : '3つ揃えて START !';
+}
+
+function doStart() {
+  const s = reels[0].sel();
+  if (reels.every(r => r.sel() === s)) {
+    window.location.href = ITEMS[s].url;
+  }
+}
+
+checkAll();
+</script>
+</body>
+</html>
