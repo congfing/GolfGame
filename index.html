@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>GOLF GAME</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --red:  #a80e0e;
+  --red2: #cc1a1a;
+  --gold: #f5c518;
+  --gold2:#ffd700;
+  --gold3:#c8960c;
+  --dark: #120600;
+}
+body {
+  background: var(--dark);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  position: relative;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+}
+
+.sunburst {
+  position: fixed; inset: 0; z-index: 0;
+  background:
+    repeating-conic-gradient(from 0deg at 50% 45%,
+      rgba(110,50,5,0.6) 0deg 9deg, rgba(12,4,0,0.6) 9deg 18deg),
+    radial-gradient(ellipse 90% 80% at 50% 45%, #2a1000 0%, #060100 100%);
+}
+.sunburst::after {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse 75% 65% at 50% 45%, transparent 25%, rgba(0,0,0,0.65) 100%);
+}
+
+.machine {
+  position: relative; z-index: 1;
+  width: 300px;
+  background: linear-gradient(175deg, #cc1a1a 0%, #8b0a0a 45%, #6e0707 100%);
+  border-radius: 22px;
+  border: 3px solid var(--gold3);
+  box-shadow:
+    0 0 0 1px rgba(255,210,0,0.25),
+    inset 0 2px 0 rgba(255,210,0,0.22),
+    inset 0 -2px 0 rgba(0,0,0,0.5),
+    0 24px 60px rgba(0,0,0,0.85);
+  padding: 14px 12px 16px;
+  overflow: hidden;
+}
+.machine::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 45%;
+  background: linear-gradient(to bottom, rgba(255,200,0,0.07), transparent);
+  pointer-events: none;
+}
+
+/* ── 電球 ── */
+.bulb-row { display: flex; justify-content: space-around; align-items: center; padding: 5px 2px; }
+.bulb { width: 9px; height: 9px; border-radius: 50%; background: rgba(255,240,100,0.15); border: 1px solid rgba(200,150,0,0.35); flex-shrink: 0; transition: background 0.2s, box-shadow 0.2s; }
+.bulb.on { background: #ffffa0; box-shadow: 0 0 5px #ffe000, 0 0 10px rgba(255,210,0,0.45); }
+.bulb.on-red { background: #ff8080; box-shadow: 0 0 5px #ff3030, 0 0 10px rgba(255,60,0,0.45); }
+@keyframes bOn  { 0%,100%{opacity:1}  50%{opacity:0.1} }
+@keyframes bOn2 { 0%,100%{opacity:0.1} 50%{opacity:1}  }
+.bulb.blink-a { animation: bOn  0.35s ease-in-out infinite; }
+.bulb.blink-b { animation: bOn2 0.35s ease-in-out infinite; }
+
+/* ── タイトル ── */
+.machine-title {
+  text-align: center; padding: 6px 0 4px;
+  border: 2px solid rgba(200,150,0,0.45); border-radius: 10px;
+  background: linear-gradient(180deg, #6e0707 0%, #3d0303 100%);
+  box-shadow: inset 0 2px 8px rgba(0,0,0,0.5), 0 2px 6px rgba(0,0,0,0.4);
+  margin-bottom: 2px;
+}
+.title-main { font-size: 32px; font-weight: 900; color: var(--gold2); letter-spacing: 0.18em; text-shadow: 0 2px 4px rgba(0,0,0,0.9), 0 0 20px rgba(255,200,0,0.55); -webkit-text-stroke: 0.5px rgba(160,90,0,0.6); }
+.title-script { font-size: 26px; font-style: italic; font-weight: 700; color: #fff; font-family: Georgia, serif; transform: rotate(-6deg) translateX(-4px); display: inline-block; text-shadow: 0 2px 6px rgba(0,0,0,0.9); margin-top: -2px; }
+
+/* ── リール ── */
+.reels-outer { margin: 8px 0 4px; }
+.reel-light-bar { height: 7px; background: linear-gradient(90deg,#4a0000,#7a0808,#a01010,#c8960c,#a01010,#7a0808,#4a0000); border: 1px solid rgba(200,150,0,0.35); border-radius: 2px; }
+.reels-frame { display: flex; gap: 5px; background: linear-gradient(180deg,#0e0400,#060100); border: 2px solid rgba(200,150,0,0.45); border-radius: 8px; padding: 6px 5px; margin: 3px 0; position: relative; box-shadow: inset 0 4px 14px rgba(0,0,0,0.9); }
+
+.win-line { position: absolute; left: 5px; right: 5px; top: 50%; height: 84px; transform: translateY(-50%); border-top: 1px solid rgba(255,200,0,0.2); border-bottom: 1px solid rgba(255,200,0,0.2); pointer-events: none; z-index: 2; border-radius: 4px; transition: all 0.3s; }
+.win-line.matched { background: rgba(255,200,0,0.08); border-color: rgba(255,200,0,0.7); box-shadow: 0 0 14px rgba(255,200,0,0.35); }
+
+.reel-viewport { flex: 1; height: 252px; overflow: hidden; position: relative; border-radius: 5px; cursor: grab; user-select: none; -webkit-user-select: none; touch-action: none; }
+.reel-viewport::before, .reel-viewport::after { content: ''; position: absolute; left: 0; right: 0; height: 84px; z-index: 3; pointer-events: none; }
+.reel-viewport::before { top: 0;    background: linear-gradient(to bottom, rgba(6,1,0,0.97) 0%, transparent 100%); }
+.reel-viewport::after  { bottom: 0; background: linear-gradient(to top,   rgba(6,1,0,0.97) 0%, transparent 100%); }
+
+.reel-track { position: absolute; left: 0; right: 0; will-change: transform; }
+.reel-item { height: 84px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; border-radius: 6px; margin: 0 2px; }
+.ri-icon { font-size: 26px; line-height: 1; }
+.ri-name { font-size: 9px; font-weight: 700; color: rgba(255,255,255,0.55); text-align: center; line-height: 1.35; white-space: pre-line; letter-spacing: 0.02em; }
+.reel-item.selected { background: rgba(255,210,0,0.1); border: 1px solid rgba(255,200,0,0.2); }
+.reel-item.selected .ri-name { color: #fff; }
+
+/* ── STOP ボタン ── */
+.stop-row { display: flex; gap: 5px; margin: 5px 0 5px; }
+.stop-btn {
+  flex: 1; height: 40px; border-radius: 10px;
+  font-size: 12px; font-weight: 900; letter-spacing: 0.1em;
+  border: 2px solid rgba(80,80,80,0.4);
+  background: linear-gradient(180deg, #333 0%, #1a1a1a 100%);
+  color: rgba(150,150,150,0.3);
+  cursor: not-allowed; pointer-events: none;
+  transition: all 0.2s;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+}
+.stop-btn.active {
+  background: linear-gradient(180deg, #d06000 0%, #8a3a00 100%);
+  border: 2px solid var(--gold);
+  color: #fff;
+  cursor: pointer; pointer-events: auto;
+  box-shadow: 0 3px 14px rgba(200,80,0,0.6), 0 0 0 1px var(--gold3), inset 0 1px 0 rgba(255,200,0,0.25);
+  text-shadow: 0 0 8px rgba(255,150,0,0.8);
+}
+.stop-btn.active:active { transform: scale(0.93); }
+.stop-btn.done {
+  background: linear-gradient(180deg, #1a1200 0%, #0a0800 100%);
+  border: 2px solid rgba(150,120,0,0.3);
+  color: rgba(180,150,0,0.4);
+  cursor: default; pointer-events: none;
+}
+
+/* ── START / SPIN ボタン ── */
+.start-section { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 4px; }
+.start-btn {
+  width: 190px; height: 54px; border-radius: 27px;
+  font-size: 20px; font-weight: 900; letter-spacing: 0.22em;
+  cursor: pointer; pointer-events: auto;
+  transition: all 0.3s; position: relative; overflow: hidden;
+  /* 初期: SPIN = 赤く光る */
+  background: linear-gradient(180deg, var(--red2) 0%, var(--red) 100%);
+  border: 3px solid var(--gold);
+  color: var(--gold2);
+  box-shadow: 0 4px 22px rgba(180,0,0,0.55), 0 0 0 1px var(--gold3), inset 0 1px 0 rgba(255,220,0,0.3);
+  text-shadow: 0 0 12px rgba(255,200,0,0.9), 0 1px 2px rgba(0,0,0,0.8);
+}
+.start-btn::before { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, rgba(255,220,0,0.28) 0%, transparent 55%); border-radius: inherit; pointer-events: none; }
+.start-btn:active { transform: scale(0.95); }
+.start-btn.dim {
+  background: linear-gradient(180deg, #333 0%, #1a1a1a 100%);
+  border: 3px solid rgba(100,80,30,0.4);
+  color: rgba(160,140,80,0.35);
+  cursor: not-allowed; pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  text-shadow: none;
+}
+@keyframes btnPulse {
+  0%,100% { box-shadow: 0 4px 22px rgba(180,0,0,0.55), 0 0 0 1px var(--gold3); }
+  50%      { box-shadow: 0 4px 36px rgba(255,80,0,0.8), 0 0 24px rgba(255,200,0,0.55), 0 0 0 2px var(--gold2); }
+}
+.start-btn.blink { animation: btnPulse 0.75s ease-in-out infinite; }
+
+.start-hint { font-size: 10px; color: rgba(255,200,0,0.35); letter-spacing: 0.1em; text-align: center; transition: color 0.3s; }
+.start-hint.lit { color: rgba(255,220,0,0.85); }
+
+/* ── ダイレクトリンク ── */
+.direct-links { display: flex; justify-content: center; gap: 8px; padding: 8px 0 2px; }
+.direct-links a { color: #ffd700; font-size: 12px; font-weight: 700; text-decoration: none; padding: 5px 10px; border: 1px solid rgba(200,150,0,0.5); border-radius: 8px; background: rgba(0,0,0,0.35); }
+</style>
+</head>
+<body>
+
+<div class="sunburst"></div>
+
+<div class="machine">
+  <div class="bulb-row" id="bRow0"></div>
+
+  <div class="machine-title">
+    <div class="title-main">CASINO</div>
+    <div><span class="title-script">Start</span></div>
+  </div>
+
+  <div class="bulb-row" id="bRow1"></div>
+
+  <div class="reels-outer">
+    <div class="reel-light-bar"></div>
+    <div class="reels-frame">
+      <div class="win-line" id="winLine"></div>
+      <div class="reel-viewport" id="rv0"><div class="reel-track" id="rt0"></div></div>
+      <div class="reel-viewport" id="rv1"><div class="reel-track" id="rt1"></div></div>
+      <div class="reel-viewport" id="rv2"><div class="reel-track" id="rt2"></div></div>
+    </div>
+    <div class="reel-light-bar"></div>
+  </div>
+
+  <!-- STOP ボタン（3つ） -->
+  <div class="stop-row">
+    <button class="stop-btn" id="sb0" onclick="doStop(0)">STOP</button>
+    <button class="stop-btn" id="sb1" onclick="doStop(1)">STOP</button>
+    <button class="stop-btn" id="sb2" onclick="doStop(2)">STOP</button>
+  </div>
+
+  <div class="bulb-row" id="bRow2"></div>
+
+  <div class="start-section">
+    <button class="start-btn" id="startBtn" onclick="doAction()">SPIN</button>
+    <div class="start-hint lit" id="startHint">SPIN で回す！</div>
+  </div>
+
+  <div class="bulb-row" id="bRow3"></div>
+
+  <div class="direct-links">
+    <a href="https://congfing.github.io/GolfGame/index13.html">v13</a>
+    <a href="https://congfing.github.io/GolfGame/index_app08.html">v08</a>
+    <a href="https://congfing.github.io/GolfGame/index_app11.html">v11</a>
+  </div>
+</div>
+
+<script>
+/* ── ゲームデータ ── */
+const ITEMS = [
+  { name:'v13\nTEXT', icon:'📋', url:'https://congfing.github.io/GolfGame/index13.html' },
+  { name:'v08\nAPP',  icon:'📱', url:'https://congfing.github.io/GolfGame/index_app08.html' },
+  { name:'v11\nAPP',  icon:'🏌️', url:'https://congfing.github.io/GolfGame/index_app11.html' }
+];
+const N      = ITEMS.length;
+const ALL    = [...ITEMS, ...ITEMS, ...ITEMS];
+const ITEM_H = 84;
+const VPORT  = 252;
+const SPIN_V = 900; // 回転速度 px/s
+
+// 'idle' = 初期停止, 'spinning' = 回転中, 'done' = 全停止後
+let gameState = 'idle';
+
+/* ── 電球 ── */
+function makeBulbs(id, count = 16) {
+  const row = document.getElementById(id);
+  for (let i = 0; i < count; i++) {
+    const b = document.createElement('div');
+    b.className = 'bulb' + (i % 2 === 0 ? ' on' : '');
+    row.appendChild(b);
+  }
+}
+['bRow0','bRow1','bRow2','bRow3'].forEach(id => makeBulbs(id));
+
+let bulbTick = 0;
+function tickBulbs() {
+  const matched = gameState === 'done' &&
+    reels[0].sel() === reels[1].sel() && reels[1].sel() === reels[2].sel();
+  document.querySelectorAll('.bulb').forEach((b, i) => {
+    b.classList.remove('on','on-red','blink-a','blink-b');
+    if (matched) {
+      b.classList.add(i % 2 === 0 ? 'blink-a' : 'blink-b');
+      b.classList.add(i % 2 === 0 ? 'on' : 'on-red');
+    } else {
+      if ((i + bulbTick) % 2 === 0) b.classList.add('on');
+    }
+  });
+  bulbTick++;
+  setTimeout(tickBulbs, matched ? 300 : 700);
+}
+setTimeout(tickBulbs, 700);
+
+/* ────────────────────────────────────────
+   Reel クラス
+──────────────────────────────────────── */
+class Reel {
+  constructor(vpId, trackId, startIdx) {
+    this.vp         = document.getElementById(vpId);
+    this.track      = document.getElementById(trackId);
+    this.itemH      = ITEM_H;
+    this.vport      = VPORT;
+    this.pos        = (N + startIdx) * ITEM_H;
+    this.vel        = 0;
+    this.animId     = null;
+    this.dragging   = false;
+    this.isSpinning = false;
+    this._render();
+    this._draw(false);
+    this._bind();
+  }
+
+  sel() {
+    return ((Math.round(this.pos / this.itemH) % N) + N) % N;
+  }
+
+  _render() {
+    this.track.innerHTML = ALL.map((it, i) =>
+      `<div class="reel-item" data-i="${i}">
+         <div class="ri-icon">${it.icon}</div>
+         <div class="ri-name">${it.name}</div>
+       </div>`
+    ).join('');
+  }
+
+  _ty() { return this.vport / 2 - this.itemH / 2 - this.pos; }
+
+  _draw(snap = false) {
+    this.track.style.transition = snap
+      ? 'transform 0.26s cubic-bezier(0.22,1,0.36,1)' : 'none';
+    this.track.style.transform = `translateY(${this._ty()}px)`;
+    const si = ((Math.round(this.pos / this.itemH)) % ALL.length + ALL.length) % ALL.length;
+    this.track.querySelectorAll('.reel-item')
+      .forEach((el, i) => el.classList.toggle('selected', i === si));
+  }
+
+  _wrap() {
+    const lo = N * this.itemH, hi = N * 2 * this.itemH;
+    if (this.pos >= hi) this.pos -= N * this.itemH;
+    if (this.pos <  lo) this.pos += N * this.itemH;
+  }
+
+  _stopAnim() {
+    if (this.animId) { cancelAnimationFrame(this.animId); this.animId = null; }
+  }
+
+  /* 連続回転 */
+  spin() {
+    this._stopAnim();
+    this.isSpinning = true;
+    let lastT = performance.now();
+    const step = (now) => {
+      const dt = Math.min((now - lastT) / 1000, 0.05);
+      lastT = now;
+      this.pos += SPIN_V * dt;
+      this._wrap();
+      this._draw(false);
+      this.animId = requestAnimationFrame(step);
+    };
+    this.animId = requestAnimationFrame(step);
+  }
+
+  /* STOPボタンで停止 */
+  stopSpin() {
+    if (!this.isSpinning) return;
+    this._stopAnim();
+    this.isSpinning = false;
+    this._decelerate(SPIN_V);
+  }
+
+  /* 減速→スナップ（回転停止 or 手動スワイプ後） */
+  _decelerate(initVel) {
+    this._stopAnim();
+    this.vel = initVel;
+    let lastT = performance.now();
+    const step = (now) => {
+      const dt = Math.min((now - lastT) / 1000, 0.05);
+      lastT = now;
+      this.pos += this.vel * dt;
+      this.vel *= Math.pow(0.92, dt * 60);
+      this._wrap();
+      this._draw(false);
+      if (Math.abs(this.vel) > 18) {
+        this.animId = requestAnimationFrame(step);
+      } else {
+        this.pos = Math.round(this.pos / this.itemH) * this.itemH;
+        this._wrap();
+        this._draw(true);
+        this.vel = 0;
+        this.animId = null;
+        onReelSettled();
+      }
+    };
+    this.animId = requestAnimationFrame(step);
+  }
+
+  /* タッチ / マウス ドラッグ */
+  _bind() {
+    let startPos, startY, lastY, lastT, velSmooth;
+    const canDrag = () => !this.isSpinning && gameState !== 'spinning';
+
+    const onStart = (y) => {
+      if (!canDrag()) return;
+      this._stopAnim();
+      startPos = this.pos; startY = lastY = y;
+      lastT = performance.now(); velSmooth = 0;
+      this.dragging = true;
+    };
+    const onMove = (y) => {
+      if (!this.dragging) return;
+      const now = performance.now(), dt = now - lastT;
+      if (dt > 1) {
+        const raw = -(y - lastY) / dt * 1000;
+        velSmooth = velSmooth * 0.55 + raw * 0.45;
+      }
+      lastY = y; lastT = performance.now();
+      this.pos = startPos + (startY - y);
+      this._wrap(); this._draw(false);
+    };
+    const onEnd = () => {
+      if (!this.dragging) return;
+      this.dragging = false;
+      this._decelerate(velSmooth);
+    };
+
+    this.vp.addEventListener('touchstart', e => { onStart(e.touches[0].clientY); e.preventDefault(); }, { passive: false });
+    this.vp.addEventListener('touchmove',  e => { onMove(e.touches[0].clientY);  e.preventDefault(); }, { passive: false });
+    this.vp.addEventListener('touchend',   () => onEnd(), { passive: true });
+    let md = false;
+    this.vp.addEventListener('mousedown', e => { md = true; onStart(e.clientY); e.preventDefault(); });
+    window.addEventListener('mousemove',  e => { if (md) onMove(e.clientY); });
+    window.addEventListener('mouseup',    () => { if (md) { md = false; onEnd(); } });
+  }
+}
+
+/* ── リール生成 ── */
+const reels = [
+  new Reel('rv0','rt0', 0),
+  new Reel('rv1','rt1', 0),
+  new Reel('rv2','rt2', 0),
+];
+
+/* ── リールが静止したときの共通コールバック ── */
+function onReelSettled() {
+  // spinning中: 全リールが止まったら done へ
+  if (gameState === 'spinning') {
+    if (reels.every(r => !r.isSpinning && !r.animId)) {
+      gameState = 'done';
+      setStopBtns('done');
+      refreshStartBtn();
+    }
+    return;
+  }
+  // done中: 手動スワイプ後に再チェック
+  if (gameState === 'done') {
+    if (reels.every(r => !r.animId && !r.dragging)) {
+      refreshStartBtn();
+    }
+  }
+}
+
+/* ── STOPボタン状態更新 ── */
+function setStopBtns(mode) {
+  // mode: 'off' | 'active' | 'done'
+  for (let i = 0; i < 3; i++) {
+    const btn = document.getElementById('sb' + i);
+    btn.classList.remove('active', 'done');
+    if (mode === 'active') btn.classList.add('active');
+    else if (mode === 'done') btn.classList.add('done');
+  }
+}
+
+/* ── STARTボタンとヒント更新 ── */
+function refreshStartBtn() {
+  const s   = reels.map(r => r.sel());
+  const ok  = s[0] === s[1] && s[1] === s[2];
+  const btn  = document.getElementById('startBtn');
+  const hint = document.getElementById('startHint');
+  const wl   = document.getElementById('winLine');
+
+  wl.classList.toggle('matched', ok);
+  btn.classList.remove('dim');
+
+  if (ok) {
+    btn.classList.add('blink');
+    btn.textContent = 'START';
+    hint.textContent = ITEMS[s[0]].name.replace('\n',' ') + ' でスタート！';
+    hint.classList.add('lit');
+  } else {
+    btn.classList.remove('blink');
+    btn.textContent = 'SPIN';
+    hint.textContent = 'タッチで調整 → SPIN で再挑戦';
+    hint.classList.remove('lit');
+  }
+}
+
+/* ── SPINボタン押下 → 全リール回転開始 ── */
+function doAction() {
+  // START（揃っている）→ 起動
+  if (gameState === 'done') {
+    const s = reels[0].sel();
+    if (reels.every(r => r.sel() === s)) {
+      window.location.href = ITEMS[s].url;
+      return;
+    }
+  }
+  // SPIN → 回転開始（idle または done/不一致）
+  if (gameState === 'idle' || gameState === 'done') {
+    gameState = 'spinning';
+    reels.forEach(r => r.spin());
+    setStopBtns('active');
+    document.getElementById('winLine').classList.remove('matched');
+
+    const btn  = document.getElementById('startBtn');
+    const hint = document.getElementById('startHint');
+    btn.classList.add('dim');
+    btn.classList.remove('blink');
+    btn.textContent = 'SPIN';
+    hint.textContent = 'STOP で止めて！';
+    hint.classList.remove('lit');
+  }
+}
+
+/* ── 個別 STOP ── */
+function doStop(idx) {
+  if (gameState !== 'spinning') return;
+  if (!reels[idx].isSpinning) return;
+  reels[idx].stopSpin();
+  // 止めた分のSTOPボタンを done に
+  document.getElementById('sb' + idx).classList.remove('active');
+  document.getElementById('sb' + idx).classList.add('done');
+}
+</script>
+
+<!-- 右スワイプ（左端から）でスタートへ戻る -->
+<script>
+(function(){
+  var sx=0, sy=0;
+  document.addEventListener('touchstart', function(e){
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+  }, {passive:true});
+  document.addEventListener('touchend', function(e){
+    var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(sx<40 && dx>70 && Math.abs(dy)<60){ window.location.href='start01.html'; }
+  }, {passive:true});
+})();
+</script>
+</body>
+</html>
