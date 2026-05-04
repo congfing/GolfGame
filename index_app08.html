@@ -55,6 +55,12 @@ body {
 }
 .back-btn:active { background: var(--glass-hover); border-color: var(--green); }
 .screen-title { font-size: 17px; font-weight: 600; flex: 1; }
+.ver-tag {
+  font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 6px; padding: 2px 7px; letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
 .mode-badge {
   font-size: 11px; color: var(--green); background: var(--green-dim);
   border: 1px solid rgba(29,158,117,0.4);
@@ -480,6 +486,7 @@ tr.round-sep td {
     <button class="back-btn" onclick="showScreen('screen-start')">‹</button>
     <div class="screen-title">設定</div>
     <div class="mode-badge" id="modeBadge"></div>
+    <span class="ver-tag">v08</span>
   </div>
   <div class="screen-body">
     <div class="section-label">ラウンド情報</div>
@@ -644,6 +651,7 @@ tr.round-sep td {
     <button class="back-btn" onclick="showScreen('screen-settings')">‹</button>
     <div class="screen-title">ラスベガス入力</div>
     <div class="mode-badge" id="modeBadge2"></div>
+    <span class="ver-tag">v08</span>
   </div>
   <div class="screen-body" style="padding:12px;">
     <div id="roundInfoBar" style="font-size:12px; color:rgba(255,255,255,0.3); margin-bottom:10px;"></div>
@@ -665,6 +673,7 @@ tr.round-sep td {
     <button class="back-btn" onclick="showScreen('screen-scores')">‹</button>
     <div class="screen-title">オリンピック入力</div>
     <div class="mode-badge" id="modeBadgeOlympic"></div>
+    <span class="ver-tag">v08</span>
   </div>
   <div class="screen-body" style="padding:12px;">
     <div class="score-scroll">
@@ -682,7 +691,7 @@ tr.round-sep td {
   <div class="screen-header">
     <button class="back-btn" onclick="showScreen('screen-start')">‹</button>
     <div class="screen-title">履歴</div>
-    <div></div>
+    <span class="ver-tag">v08</span>
   </div>
   <div class="hist-restore-bar">
     <select id="histDateSelect">
@@ -700,6 +709,7 @@ tr.round-sep td {
     <button class="back-btn" onclick="showScreen('screen-scores')">‹</button>
     <div class="screen-title">結果</div>
     <div class="mode-badge" id="modeBadge3"></div>
+    <span class="ver-tag">v08</span>
   </div>
   <div class="screen-body">
     <div id="roundInfoBar2" style="font-size:12px; color:rgba(255,255,255,0.3); margin-bottom:14px;"></div>
