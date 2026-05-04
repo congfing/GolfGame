@@ -55,6 +55,12 @@ body {
 }
 .back-btn:active { background: var(--glass-hover); border-color: var(--green); }
 .screen-title { font-size: 17px; font-weight: 600; flex: 1; }
+.ver-tag {
+  font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.3);
+  background: rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.1);
+  border-radius: 6px; padding: 2px 7px; letter-spacing: 0.05em;
+  flex-shrink: 0;
+}
 .mode-badge {
   font-size: 11px; color: var(--green); background: var(--green-dim);
   border: 1px solid rgba(29,158,117,0.4);
@@ -491,6 +497,7 @@ tr.round-sep td {
     <button class="back-btn" onclick="showScreen('screen-start')">‹</button>
     <div class="screen-title">設定</div>
     <div class="mode-badge" id="modeBadge"></div>
+    <span class="ver-tag">v11</span>
   </div>
   <div class="screen-body">
     <div class="section-label">ラウンド情報</div>
@@ -655,6 +662,7 @@ tr.round-sep td {
     <button class="back-btn" onclick="showScreen('screen-settings')">‹</button>
     <div class="screen-title">ラスベガス入力</div>
     <div class="mode-badge" id="modeBadge2"></div>
+    <span class="ver-tag">v11</span>
   </div>
   <div class="screen-body" style="padding:12px;">
     <div id="roundInfoBar" style="font-size:12px; color:rgba(255,255,255,0.3); margin-bottom:10px;"></div>
@@ -676,6 +684,7 @@ tr.round-sep td {
     <button class="back-btn" onclick="showScreen('screen-scores')">‹</button>
     <div class="screen-title">オリンピック入力</div>
     <div class="mode-badge" id="modeBadgeOlympic"></div>
+    <span class="ver-tag">v11</span>
   </div>
   <div class="screen-body" style="padding:12px;">
     <div class="score-scroll">
@@ -693,7 +702,7 @@ tr.round-sep td {
   <div class="screen-header">
     <button class="back-btn" onclick="showScreen('screen-start')">‹</button>
     <div class="screen-title">履歴</div>
-    <div></div>
+    <span class="ver-tag">v11</span>
   </div>
   <div class="hist-restore-bar">
     <select id="histDateSelect">
@@ -711,6 +720,7 @@ tr.round-sep td {
     <button class="back-btn" onclick="showScreen('screen-scores')">‹</button>
     <div class="screen-title">結果</div>
     <div class="mode-badge" id="modeBadge3"></div>
+    <span class="ver-tag">v11</span>
   </div>
   <div class="screen-body">
     <div id="roundInfoBar2" style="font-size:12px; color:rgba(255,255,255,0.3); margin-bottom:14px;"></div>
@@ -1742,18 +1752,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
 })();
 </script>
 
-<!-- ▶ スタート画面へ戻る（左端タブ＋右スワイプ） -->
-<a href="start01.html" id="homeTab" style="
-  position:fixed; left:0; top:50%; transform:translateY(-50%);
-  z-index:9999; display:flex; flex-direction:column; align-items:center;
-  justify-content:center; gap:3px;
-  width:22px; padding:14px 0;
-  background:rgba(0,0,0,0.45); border-radius:0 10px 10px 0;
-  border:1px solid rgba(255,255,255,0.18); border-left:none;
-  color:rgba(255,255,255,0.6); text-decoration:none;
-  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-  font-size:13px; writing-mode:vertical-rl; letter-spacing:0.08em;
-  transition: background 0.2s, color 0.2s;">◀</a>
+<!-- ▶ 右スワイプ（左端から）でスタートへ戻る -->
 <script>
 /* 右スワイプ（左端から）でスタートへ戻る */
 (function(){
