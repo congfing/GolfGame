@@ -497,6 +497,7 @@ tr.round-sep td {
   </div>
   <button class="arrow-btn" id="arrowBtn" onclick="goToSettings()">›</button>
   <button class="hist-btn" onclick="showScreen('screen-history'); renderHistory();">📋 履歴を見る</button>
+  <button class="hist-btn" onclick="loadSampleData('golf_20260517_大甲賀神コース.json')">🔁 2026/05/17 再現</button>
 </div>
 
 <div id="screen-settings" class="screen">
@@ -1600,39 +1601,53 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
       reader.onload=ev=>{
         try{
           const data=JSON.parse(ev.target.result);
-          mode=data.mode||'both'; selectedGame=mode;
-          ['vegas','olympic','both'].forEach(g=>{document.getElementById('card-'+g).classList.toggle('selected',g===mode);document.getElementById('check-'+g).textContent=g===mode?'✓':'';});
-          document.getElementById('arrowBtn').classList.add('enabled');
-          const labels={vegas:'ラスベガス',olympic:'オリンピック',both:'両方'};
-          ['modeBadge','modeBadge2','modeBadge3'].forEach(id=>document.getElementById(id).textContent=labels[mode]);
-          document.getElementById('vegasOptSection').classList.toggle('hidden',mode==='olympic');
-          document.getElementById('olympicOptSection').classList.toggle('hidden',mode==='vegas');
-          document.getElementById('playerCount').value=data.playerCount||4;
-          document.getElementById('holeCount').value=data.holeCount||18;
-          if(data.round){document.getElementById('courseName').value=data.round.course||'';document.getElementById('roundDate').value=data.round.date||'';document.getElementById('roundMemo').value=data.round.memo||'';selectedWeather=data.round.weather||'';document.querySelectorAll('.weather-btn').forEach(b=>b.classList.toggle('selected',b.dataset.weather===selectedWeather));}
-          if(data.options) Object.keys(data.options).forEach(k=>{const el=document.getElementById(k);if(el) el.value=data.options[k];});
-          if(data.vegasPairings && Array.isArray(data.vegasPairings)) {
-            data.vegasPairings.forEach((v,i)=>{ vegasPairings[i]=v; });
-          }
-          kzState = data.kzState ? Object.assign({}, data.kzState) : {};
-          siState = data.siState ? Object.assign({}, data.siState) : {};
-          rebuildAll();
-          setTimeout(()=>{
-            if(data.names) data.names.forEach((n,i)=>{const el=document.getElementById('pname'+i);if(el) el.value=n;});
-            if(data.pars) Object.keys(data.pars).forEach(k=>{const el=document.getElementById('par_'+k);if(el) el.value=data.pars[k];});
-            rebuildHoles();
-            setTimeout(()=>{
-              if(data.scores) Object.keys(data.scores).forEach(k=>{const el=document.getElementById('s_'+k);if(el) el.value=data.scores[k];});
-              if(data.metals) Object.keys(data.metals).forEach(k=>{const el=document.getElementById('m_'+k);if(el){el.value=data.metals[k];const pt=k.split('_');updateMC(pt[0],pt[1]);}});
-              if(data.birdies) Object.keys(data.birdies).forEach(k=>{const el=document.getElementById('b_'+k);if(el) el.value=data.birdies[k];});
-              calculate(); showScreen('screen-scores');
-            },50);
-          },50);
+          applyLoadedData(data);
         }catch(err){alert('読み込み失敗: '+err.message);}
       };
       reader.readAsText(file);
     };
     input.click();
+  }
+
+  async function loadSampleData(url) {
+    try {
+      const res = await fetch(url + '?t=' + Date.now());
+      if (!res.ok) throw new Error('再現データを取得できません: ' + res.status);
+      applyLoadedData(await res.json());
+    } catch (err) {
+      alert('再現データの読み込み失敗: ' + err.message);
+    }
+  }
+
+  function applyLoadedData(data) {
+    mode=data.mode||'both'; selectedGame=mode;
+    ['vegas','olympic','both'].forEach(g=>{document.getElementById('card-'+g).classList.toggle('selected',g===mode);document.getElementById('check-'+g).textContent=g===mode?'✓':'';});
+    document.getElementById('arrowBtn').classList.add('enabled');
+    const labels={vegas:'ラスベガス',olympic:'オリンピック',both:'両方'};
+    ['modeBadge','modeBadge2','modeBadge3'].forEach(id=>document.getElementById(id).textContent=labels[mode]);
+    document.getElementById('vegasOptSection').classList.toggle('hidden',mode==='olympic');
+    document.getElementById('olympicOptSection').classList.toggle('hidden',mode==='vegas');
+    document.getElementById('playerCount').value=data.playerCount||4;
+    document.getElementById('holeCount').value=data.holeCount||18;
+    if(data.round){document.getElementById('courseName').value=data.round.course||'';document.getElementById('roundDate').value=data.round.date||'';document.getElementById('roundMemo').value=data.round.memo||'';selectedWeather=data.round.weather||'';document.querySelectorAll('.weather-btn').forEach(b=>b.classList.toggle('selected',b.dataset.weather===selectedWeather));}
+    if(data.options) Object.keys(data.options).forEach(k=>{const el=document.getElementById(k);if(el) el.value=data.options[k];});
+    if(data.vegasPairings && Array.isArray(data.vegasPairings)) {
+      data.vegasPairings.forEach((v,i)=>{ vegasPairings[i]=v; });
+    }
+    kzState = data.kzState ? Object.assign({}, data.kzState) : {};
+    siState = data.siState ? Object.assign({}, data.siState) : {};
+    rebuildAll();
+    setTimeout(()=>{
+      if(data.names) data.names.forEach((n,i)=>{const el=document.getElementById('pname'+i);if(el) el.value=n;});
+      if(data.pars) Object.keys(data.pars).forEach(k=>{const el=document.getElementById('par_'+k);if(el) el.value=data.pars[k];});
+      rebuildHoles();
+      setTimeout(()=>{
+        if(data.scores) Object.keys(data.scores).forEach(k=>{const el=document.getElementById('s_'+k);if(el) el.value=data.scores[k];});
+        if(data.metals) Object.keys(data.metals).forEach(k=>{const el=document.getElementById('m_'+k);if(el){el.value=data.metals[k];const pt=k.split('_');updateMC(pt[0],pt[1]);}});
+        if(data.birdies) Object.keys(data.birdies).forEach(k=>{const el=document.getElementById('b_'+k);if(el) el.value=data.birdies[k];});
+        calculate(); showScreen('screen-scores');
+      },50);
+    },50);
   }
 
 
