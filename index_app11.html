@@ -190,14 +190,18 @@ select { min-width: 80px; }
   transform: scale(1.05);
 }
 .arrow-btn.enabled:active { transform: scale(0.96); background: #0f6e56; }
-.score-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.score-scroll {
+  max-height: calc(100vh - 178px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
 table.stbl { border-collapse: collapse; font-size: 12px; white-space: nowrap; width: 100%; table-layout: fixed; }
 table.stbl th, table.stbl td {
   border: 1px solid rgba(0,0,0,0.08); padding: 3px 2px; text-align: center; min-width: 0; width: auto;
 }
 table.stbl th {
   background: rgba(0,0,0,0.06); color: #111;
-  font-size: 11px; font-weight: 500; position: sticky; top: 0; z-index: 2;
+  font-size: 11px; font-weight: 500; position: sticky; top: 0; z-index: 5;
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
 }
 table.stbl .h-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); width: 32px; max-width: 32px; font-weight: 500; }
@@ -1235,6 +1239,12 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     if(document.getElementById('vTrunc').value==='on'){s1=Math.floor(s1/10)*10;s2=Math.floor(s2/10)*10;}
     const diff=s1-s2,result=[0,0,0,0];
     result[t1[0]]=-diff;result[t1[1]]=-diff;result[t2[0]]=diff;result[t2[1]]=diff;
+    if(playerCount===3){
+      const ghostTeam=t1.includes(3)?t1:t2;
+      const realMate=ghostTeam.find(p=>p!==3);
+      if(realMate!==undefined) result[realMate]+=result[3];
+      result[3]=0;
+    }
     return result;
   }
 
@@ -1331,10 +1341,13 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     const vTotals=new Array(playerCount).fill(0),oRaw=new Array(playerCount).fill(0);
     const oRaw_h1=new Array(playerCount).fill(0),oRaw_h2=new Array(playerCount).fill(0);
     const vTotals_h1=new Array(playerCount).fill(0),vTotals_h2=new Array(playerCount).fill(0);
+    let vPlayed=false, vPlayed_h1=false, vPlayed_h2=false;
     for(let h=0;h<holeCount;h++){
       if(mode!=='olympic'){
         const v=calcVegasHole(h);
         if(v){
+          vPlayed=true;
+          if(holeCount===18){if(h<9) vPlayed_h1=true; else vPlayed_h2=true;}
           for(let p=0;p<playerCount;p++){
             vTotals[p]+=v[p];
             if(holeCount===18){if(h<9) vTotals_h1[p]+=v[p]; else vTotals_h2[p]+=v[p];}
@@ -1345,7 +1358,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
               const pv=v[p];
               if(pv>0){vpCell.textContent='+'+pv;vpCell.className='hole-vpt vpt-pos';}
               else if(pv<0){vpCell.textContent=pv;vpCell.className='hole-vpt vpt-neg';}
-              else{vpCell.textContent='-';vpCell.className='hole-vpt vpt-zero';}
+              else{vpCell.textContent='0';vpCell.className='hole-vpt vpt-zero';}
             }
           }
         } else {
@@ -1442,15 +1455,14 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     updateSubtotals();
     // Vegas小計を各合計行に反映
     if(mode!=='olympic'){
-      const vRanges=[{id:'total',arr:vTotals}];
-      if(holeCount===18){vRanges.push({id:'half1',arr:vTotals_h1});vRanges.push({id:'half2',arr:vTotals_h2});}
-      vRanges.forEach(({id,arr})=>{
-        const anyV=arr.some(v=>v!==0);
+      const vRanges=[{id:'total',arr:vTotals,played:vPlayed}];
+      if(holeCount===18){vRanges.push({id:'half1',arr:vTotals_h1,played:vPlayed_h1});vRanges.push({id:'half2',arr:vTotals_h2,played:vPlayed_h2});}
+      vRanges.forEach(({id,arr,played})=>{
         for(let p=0;p<playerCount;p++){
           const el=document.getElementById('vsub-'+id+'-'+p);
           if(el){
             const v=arr[p];
-            el.textContent=anyV?(v>0?'+':'')+v+'pt':'-';
+            el.textContent=played?(v>0?'+':'')+v+'pt':'-';
             el.style.color=v>0?'#1d9e75':v<0?'#e24b4a':'#888';
           }
         }

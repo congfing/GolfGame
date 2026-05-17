@@ -68,7 +68,11 @@
   }
   .preset-btn:hover { background: #e8e6dd; }
 
-  .hole-wrapper { overflow-x: auto; }
+  .hole-wrapper {
+    max-height: calc(100vh - 178px);
+    overflow: auto;
+    -webkit-overflow-scrolling: touch;
+  }
   table.scores {
     width: 100%; border-collapse: collapse; font-size: 13px; min-width: 320px;
   }
@@ -77,7 +81,7 @@
   }
   table.scores th {
     background: #f5f5f0; font-weight: 500; font-size: 12px; color: #5f5e5a;
-    position: sticky; top: 0;
+    position: sticky; top: 0; z-index: 5;
   }
   table.scores input, table.scores select {
     width: 100%; min-width: 50px; padding: 3px; font-size: 12px;
@@ -1056,7 +1060,13 @@
     const result = [0, 0, 0, 0];
     result[t1[0]] = -diff; result[t1[1]] = -diff;
     result[t2[0]] = diff; result[t2[1]] = diff;
-    return result; // 4要素（3人プレー時は最後の要素が仮想4人目の得点、集計には含めない）
+    if (playerCount === 3) {
+      const ghostTeam = t1.includes(3) ? t1 : t2;
+      const realMate = ghostTeam.find(p => p !== 3);
+      if (realMate !== undefined) result[realMate] += result[3];
+      result[3] = 0;
+    }
+    return result;
   }
 
   function toggleKZ(h, p) {
@@ -1174,6 +1184,7 @@
     const vegasTotals = new Array(playerCount).fill(0);
     const vegasTotals_h1 = new Array(playerCount).fill(0);
     const vegasTotals_h2 = new Array(playerCount).fill(0);
+    let vegasPlayed = false, vegasPlayed_h1 = false, vegasPlayed_h2 = false;
     const olympicRawTotals = new Array(playerCount).fill(0);
 
     for (let h = 0; h < holeCount; h++) {
@@ -1192,6 +1203,8 @@
       if (mode !== 'olympic') {
         const v = calcVegasHole(h);
         if (v) {
+          vegasPlayed = true;
+          if (holeCount === 18) { if (h < 9) vegasPlayed_h1 = true; else vegasPlayed_h2 = true; }
           for (let p = 0; p < playerCount; p++) {
             vegasTotals[p] += v[p];
             if (holeCount === 18) { if (h < 9) vegasTotals_h1[p] += v[p]; else vegasTotals_h2[p] += v[p]; }
@@ -1280,15 +1293,14 @@
     updateOlympicSubtotals();
     // Vegas小計を各合計行に反映
     if (mode !== 'olympic') {
-      const vRanges = [{ id: 'total', arr: vegasTotals }];
-      if (holeCount === 18) { vRanges.push({ id: 'half1', arr: vegasTotals_h1 }); vRanges.push({ id: 'half2', arr: vegasTotals_h2 }); }
-      vRanges.forEach(({ id, arr }) => {
-        const anyV = arr.some(v => v !== 0);
+      const vRanges = [{ id: 'total', arr: vegasTotals, played: vegasPlayed }];
+      if (holeCount === 18) { vRanges.push({ id: 'half1', arr: vegasTotals_h1, played: vegasPlayed_h1 }); vRanges.push({ id: 'half2', arr: vegasTotals_h2, played: vegasPlayed_h2 }); }
+      vRanges.forEach(({ id, arr, played }) => {
         for (let p = 0; p < playerCount; p++) {
           const el = document.getElementById('vsub-' + id + '-' + p);
           if (el) {
             const v = arr[p];
-            el.textContent = anyV ? (v > 0 ? '+' : '') + v + 'pt' : '-';
+            el.textContent = played ? (v > 0 ? '+' : '') + v + 'pt' : '-';
             el.style.color = v > 0 ? '#1d9e75' : v < 0 ? '#e24b4a' : '#888';
           }
         }
@@ -1918,18 +1930,7 @@
   renderHistory();
 </script>
 
-<!-- ▶ スタート画面へ戻る（左端タブ＋右スワイプ） -->
-<a href="start01.html" id="homeTab" style="
-  position:fixed; left:0; top:50%; transform:translateY(-50%);
-  z-index:9999; display:flex; flex-direction:column; align-items:center;
-  justify-content:center; gap:3px;
-  width:22px; padding:14px 0;
-  background:rgba(0,0,0,0.45); border-radius:0 10px 10px 0;
-  border:1px solid rgba(255,255,255,0.18); border-left:none;
-  color:rgba(255,255,255,0.6); text-decoration:none;
-  backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
-  font-size:13px; writing-mode:vertical-rl; letter-spacing:0.08em;
-  transition: background 0.2s, color 0.2s;">◀</a>
+<!-- ▶ 右スワイプ（左端から）でスタートへ戻る -->
 <script>
 (function(){
   var sx=0, sy=0;
