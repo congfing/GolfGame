@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>GOLF GAME</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; }
+body {
+  background:
+    linear-gradient(180deg, rgba(160,218,190,0.78) 0%, rgba(224,241,232,0.94) 48%, rgba(249,252,248,0.98) 100%),
+    radial-gradient(ellipse at 18% 18%, rgba(255,255,255,0.92) 0 13%, transparent 29%),
+    radial-gradient(ellipse at 78% 22%, rgba(255,255,255,0.78) 0 12%, transparent 28%);
+  color: #151515;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 12% 38%, rgba(255,255,255,0.82) 0 7%, transparent 18%),
+    radial-gradient(ellipse at 86% 48%, rgba(255,255,255,0.70) 0 10%, transparent 22%),
+    linear-gradient(180deg, rgba(255,255,255,0.10), rgba(255,255,255,0.38));
+}
+.app {
+  min-height: 100vh;
+  padding: calc(env(safe-area-inset-top) + 18px) 0 calc(env(safe-area-inset-bottom) + 26px);
+  position: relative;
+  z-index: 1;
+}
+.top {
+  margin: 0 auto 8px;
+  max-width: 760px;
+  padding: 0 18px;
+  text-align: center;
+}
+.title {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.12;
+  text-shadow: 0 2px 16px rgba(255,255,255,0.85);
+}
+.subtitle {
+  color: rgba(16,70,54,0.58);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  margin-top: 7px;
+}
+.stage {
+  height: calc(100vh - 90px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  min-height: 560px;
+  overflow: hidden;
+  perspective: 1050px;
+  position: relative;
+  touch-action: pan-y;
+}
+.carousel {
+  height: 100%;
+  margin: 0 auto;
+  max-width: 820px;
+  position: relative;
+}
+.soft-card {
+  color: inherit;
+  display: block;
+  left: 50%;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  text-decoration: none;
+  top: 18px;
+  transform: translateX(-50%) translateZ(-280px) scale(0.62);
+  transform-style: preserve-3d;
+  transition: transform 0.48s cubic-bezier(0.22,1,0.36,1), opacity 0.34s ease, filter 0.34s ease;
+  width: min(66vw, 310px);
+  -webkit-tap-highlight-color: transparent;
+}
+.soft-card.is-active {
+  filter: drop-shadow(0 26px 38px rgba(42,70,80,0.28));
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateX(-50%) translateZ(80px) rotateY(0deg) scale(1);
+  z-index: 5;
+}
+.soft-card.is-prev {
+  opacity: 0.78;
+  pointer-events: auto;
+  transform: translateX(calc(-50% - min(43vw, 210px))) translateZ(-88px) rotateY(36deg) scale(0.78);
+  z-index: 3;
+}
+.soft-card.is-next {
+  opacity: 0.78;
+  pointer-events: auto;
+  transform: translateX(calc(-50% + min(43vw, 210px))) translateZ(-88px) rotateY(-36deg) scale(0.78);
+  z-index: 3;
+}
+.preview {
+  aspect-ratio: 390 / 844;
+  background: rgba(255,255,255,0.92);
+  border: 1px solid rgba(255,255,255,0.98);
+  border-radius: 24px;
+  box-shadow: 0 20px 38px rgba(42,70,80,0.22), inset 0 1px 0 rgba(255,255,255,0.92);
+  overflow: hidden;
+  position: relative;
+}
+.preview .soft-frame {
+  border: 0;
+  display: block;
+  height: 100%;
+  pointer-events: none;
+  width: 100%;
+}
+.preview::after {
+  background: linear-gradient(150deg, rgba(255,255,255,0.24), transparent 38%, rgba(255,255,255,0.10));
+  content: "";
+  inset: 0;
+  pointer-events: none;
+  position: absolute;
+}
+.card-label {
+  align-items: center;
+  display: flex;
+  gap: 7px;
+  justify-content: center;
+  margin-top: 10px;
+  min-height: 28px;
+  text-shadow: 0 2px 12px rgba(255,255,255,0.9);
+}
+.card-icon {
+  align-items: center;
+  color: rgba(0,0,0,0.58);
+  display: flex;
+  flex: 0 0 auto;
+  font-size: 20px;
+  height: 24px;
+  justify-content: center;
+  width: 24px;
+}
+.name {
+  font-size: 15px;
+  font-weight: 850;
+  line-height: 1.22;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.controls {
+  align-items: center;
+  bottom: 12px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  left: 0;
+  pointer-events: none;
+  position: absolute;
+  right: 0;
+  z-index: 10;
+}
+.spin-btn {
+  align-items: center;
+  background: rgba(255,255,255,0.74);
+  border: 1px solid rgba(255,255,255,0.88);
+  border-radius: 50%;
+  box-shadow: 0 10px 22px rgba(42,70,80,0.18), inset 0 1px 0 rgba(255,255,255,0.9);
+  color: rgba(0,0,0,0.72);
+  cursor: pointer;
+  display: flex;
+  font-size: 28px;
+  font-weight: 850;
+  height: 48px;
+  justify-content: center;
+  line-height: 1;
+  pointer-events: auto;
+  width: 48px;
+}
+.spin-btn:active { transform: scale(0.96); }
+.dots {
+  align-items: center;
+  background: rgba(255,255,255,0.54);
+  border: 1px solid rgba(255,255,255,0.74);
+  border-radius: 999px;
+  display: flex;
+  gap: 6px;
+  padding: 8px 10px;
+  pointer-events: none;
+}
+.dot {
+  background: rgba(0,0,0,0.22);
+  border-radius: 50%;
+  height: 7px;
+  width: 7px;
+}
+.dot.active { background: #1d9e75; }
+@media (min-width: 740px) {
+  .title { font-size: 32px; }
+  .stage { min-height: 620px; }
+  .soft-card { width: min(34vw, 310px); }
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <h1 class="title">GOLF GAME</h1>
+    <div class="subtitle">SELECT VERSION</div>
+  </header>
+
+  <section class="stage" id="stage" aria-label="GolfGame一覧">
+    <div class="carousel" id="carousel">
+      <a class="soft-card" href="index_app08.html?v=20260518twoline08" data-soft="app08">
+        <div class="preview">
+          <iframe class="soft-frame" src="index_app08.html?v=20260518twoline08" title="APP 08"></iframe>
+        </div>
+        <div class="card-label">
+          <div class="card-icon">📱</div>
+          <div class="name">APP 08</div>
+        </div>
+      </a>
+
+      <a class="soft-card" href="index_app11.html?v=20260518twoline08" data-soft="app11">
+        <div class="preview">
+          <iframe class="soft-frame" src="index_app11.html?v=20260518twoline08" title="APP 11"></iframe>
+        </div>
+        <div class="card-label">
+          <div class="card-icon">🏌️</div>
+          <div class="name">APP 11</div>
+        </div>
+      </a>
+
+      <a class="soft-card" href="index13.html?v=20260519score13" data-soft="text13">
+        <div class="preview">
+          <iframe class="soft-frame" src="index13.html?v=20260519score13" title="TEXT 13"></iframe>
+        </div>
+        <div class="card-label">
+          <div class="card-icon">📋</div>
+          <div class="name">TEXT 13</div>
+        </div>
+      </a>
+    </div>
+
+    <div class="controls" aria-label="回転操作">
+      <button class="spin-btn" type="button" id="prev-card" aria-label="前のカード">‹</button>
+      <div class="dots" aria-hidden="true"></div>
+      <button class="spin-btn" type="button" id="next-card" aria-label="次のカード">›</button>
+    </div>
+  </section>
+</main>
+
+<script>
+const stage = document.getElementById('stage');
+const cards = Array.from(document.querySelectorAll('.soft-card'));
+const dotsBox = document.querySelector('.dots');
+let currentIndex = 0;
+let startX = 0;
+let startY = 0;
+let dragging = false;
+let swiped = false;
+
+cards.forEach(() => {
+  const dot = document.createElement('span');
+  dot.className = 'dot';
+  dotsBox.appendChild(dot);
+});
+const dots = Array.from(document.querySelectorAll('.dot'));
+
+function relativeIndex(index) {
+  const total = cards.length;
+  let diff = index - currentIndex;
+  if (diff > total / 2) diff -= total;
+  if (diff < -total / 2) diff += total;
+  return diff;
+}
+
+function renderCarousel() {
+  cards.forEach((card, index) => {
+    card.classList.remove('is-active', 'is-prev', 'is-next');
+    const rel = relativeIndex(index);
+    if (rel === 0) card.classList.add('is-active');
+    else if (rel < 0) card.classList.add('is-prev');
+    else card.classList.add('is-next');
+  });
+  dots.forEach((dot, index) => dot.classList.toggle('active', index === currentIndex));
+}
+
+function rotateTo(index) {
+  currentIndex = (index + cards.length) % cards.length;
+  renderCarousel();
+}
+
+cards.forEach((card, index) => {
+  card.addEventListener('click', event => {
+    event.preventDefault();
+    if (swiped) {
+      swiped = false;
+      return;
+    }
+    if (index === currentIndex) window.location.href = card.href;
+    else rotateTo(index);
+  });
+});
+
+document.getElementById('prev-card').addEventListener('click', () => rotateTo(currentIndex - 1));
+document.getElementById('next-card').addEventListener('click', () => rotateTo(currentIndex + 1));
+
+function beginSwipe(x, y) {
+  dragging = true;
+  startX = x;
+  startY = y;
+}
+
+function endSwipe(x, y) {
+  if (!dragging) return;
+  dragging = false;
+  const dx = x - startX;
+  const dy = y - startY;
+  if (Math.abs(dx) > 36 && Math.abs(dx) > Math.abs(dy) * 1.25) {
+    swiped = true;
+    rotateTo(currentIndex + (dx < 0 ? 1 : -1));
+  }
+}
+
+stage.addEventListener('pointerdown', event => beginSwipe(event.clientX, event.clientY));
+stage.addEventListener('pointerup', event => endSwipe(event.clientX, event.clientY));
+stage.addEventListener('pointercancel', () => { dragging = false; });
+
+stage.addEventListener('touchstart', event => {
+  const touch = event.changedTouches[0];
+  if (touch) beginSwipe(touch.clientX, touch.clientY);
+}, { passive: true });
+
+stage.addEventListener('touchend', event => {
+  const touch = event.changedTouches[0];
+  if (touch) endSwipe(touch.clientX, touch.clientY);
+}, { passive: true });
+
+stage.addEventListener('touchcancel', () => { dragging = false; }, { passive: true });
+
+renderCarousel();
+</script>
+</body>
+</html>
