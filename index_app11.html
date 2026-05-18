@@ -214,12 +214,36 @@ table.stbl th {
   font-size: 11px; font-weight: 700; position: sticky; top: 0; z-index: 50;
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
 }
+.stbl-player-name {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.stbl-player-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 9px;
+  color: rgba(0,0,0,0.28);
+  font-weight: 600;
+  white-space: nowrap;
+}
 table.stbl .h-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); width: 32px; max-width: 32px; font-weight: 500; }
 table.stbl .par-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); width: 24px; max-width: 24px; overflow: hidden; }
-table.stbl .ghost-col { background: rgba(0,0,0,0.01); color: rgba(0,0,0,0.2); font-style: italic; }
+table.stbl .ghost-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.58); font-style: italic; font-weight: 600; }
 table.stbl input[type="number"] {
   width: 100%; min-width: 0; background: transparent; border: none;
   color: #111; font-size: 12px; padding: 2px 1px; text-align: center;
+}
+table.stbl input[type="number"]::-webkit-outer-spin-button,
+table.stbl input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+table.stbl input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
 }
 table.stbl input:focus { outline: 1px solid var(--green); background: rgba(29,158,117,0.08); border-radius: 4px; }
 table.stbl select {
@@ -334,8 +358,18 @@ tr.round-sep td {
 .honor-cell.tied { color: #888; font-size: 10px; }
 
 /* ===== TEE ORDER ===== */
-.score-cell-wrap { display: flex; align-items: center; justify-content: center; gap: 2px; }
-.score-cell-wrap input[type="number"] { flex: 1; min-width: 0 !important; max-width: 40px; flex-shrink: 1; }
+.score-cell-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+.score-entry { display: inline-flex; align-items: center; justify-content: center; gap: 2px; width: 100%; min-width: 0; }
+.score-step {
+  width: 18px; height: 20px; border: none; border-radius: 4px;
+  background: transparent; color: #555;
+  font-size: 12px; font-weight: 800; line-height: 1; padding: 0; cursor: pointer;
+}
+.score-step.down { transform: rotate(180deg); }
+.score-step:active { background: rgba(29,158,117,0.22); color: var(--green); }
+.score-cell-wrap input[type="number"] { flex: 1 1 auto; min-width: 28px !important; max-width: 40px; flex-shrink: 1; }
+.score-cell-wrap input[type="number"]::placeholder { color: #777; opacity: 1; }
+.score-cell-wrap input.score-is-par { color: #777 !important; font-weight: 600; }
 .hole-vpt {
   display: inline-block;
   font-size: 9px; font-weight: 700; color: #fff;
@@ -345,7 +379,7 @@ tr.round-sep td {
 }
 .hole-vpt.vpt-pos { background: rgba(29,158,117,0.75); color: #fff; }
 .hole-vpt.vpt-neg { background: rgba(226,75,74,0.75); color: #fff; }
-.hole-vpt.vpt-zero { background: rgba(0,0,0,0.12); color: #aaa; }
+.hole-vpt.vpt-zero { background: rgba(0,0,0,0.20); color: #666; }
 .order-badge {
   font-size: 9px; font-weight: 800; line-height: 1;
   min-width: 12px; text-align: center;
@@ -1026,7 +1060,7 @@ tr.round-sep td {
     const ghostPlayer=playerCount===3&&showVegas;
     let thead='<thead><tr><th style="width:32px;max-width:32px">H</th><th style="width:26px;max-width:26px">Par</th>';
     for(let p=0;p<playerCount;p++) {
-      thead+=`<th>${getName(p)}<br><span style="font-size:9px;color:rgba(0,0,0,0.3)">打数</span> <span style="font-size:9px;color:rgba(0,0,0,0.25)">得点</span> <span style="font-size:9px;color:rgba(0,0,0,0.2)">打順</span></th>`;
+      thead+=`<th><span class="stbl-player-name">${getName(p)}</span><span class="stbl-player-sub">打数 得点 打順</span></th>`;
     }
     if(ghostPlayer) thead+='<th style="color:rgba(255,255,255,0.2)">4人目<br><span style="font-size:9px">Par+1</span></th>';
     if(showBirdie) thead+='<th style="min-width:70px">🐦</th>';
@@ -1041,8 +1075,10 @@ tr.round-sep td {
       tbody+=`<tr${_isRndSep?' class="round-sep"':''}><td class="h-col">${getDisplayHole(h)}</td><td class="par-col">${par}</td>`;
       for(let p=0;p<playerCount;p++) {
         const sv=saved.s[h+'_'+p]||'';
+        const scoreValue=sv||par;
+        const scoreParClass=String(scoreValue)===String(par)?' score-is-par':'';
         const _tc=(_pd&&_pd.t1.includes(p))?'team1-cell':(_pd&&_pd.t2.includes(p))?'team2-cell':'';
-        tbody+=`<td class="${_tc}"><div class="score-cell-wrap"><input type="number" id="s_${h}_${p}" min="1" value="${sv}" oninput="calculate()"><span class="hole-vpt" id="vp_${h}_${p}">-</span><span class="order-badge" id="ord_${h}_${p}"></span></div></td>`;
+        tbody+=`<td class="${_tc}"><div class="score-cell-wrap"><span class="score-entry"><button type="button" class="score-step down" onclick="adjustScore(${h},${p},-1)">^</button><input type="number" class="score-input${scoreParClass}" id="s_${h}_${p}" min="1" data-par="${par}" placeholder="${par}" value="${scoreValue}" oninput="scoreChanged(this)"><button type="button" class="score-step" onclick="adjustScore(${h},${p},1)">^</button></span><span class="hole-vpt" id="vp_${h}_${p}">-</span><span class="order-badge" id="ord_${h}_${p}"></span></div></td>`;
       }
       if(ghostPlayer) tbody+=`<td class="ghost-col">${par+1}</td>`;
       if(showBirdie) {
@@ -1217,6 +1253,24 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
   function updateMC(h,p) { const sel=document.getElementById('m_'+h+'_'+p); sel.parentElement.className=sel.value?'metal-'+sel.value:''; }
 
   function getScore(h,p) { const v=document.getElementById('s_'+h+'_'+p)?.value; return v?parseInt(v):null; }
+
+  function updateScoreInputTone(input) {
+    input.classList.toggle('score-is-par', input.value === input.dataset.par);
+  }
+
+  function scoreChanged(input) {
+    updateScoreInputTone(input);
+    calculate();
+    updateTeeOrder();
+  }
+
+  function adjustScore(h,p,delta) {
+    const input = document.getElementById('s_'+h+'_'+p);
+    if (!input) return;
+    const base = input.value ? parseInt(input.value, 10) : getPar(h);
+    input.value = Math.max(1, base + delta);
+    scoreChanged(input);
+  }
 
   function calcVegasHole(h) {
     if(mode==='olympic') return null;
