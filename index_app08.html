@@ -61,6 +61,17 @@ body {
   border-radius: 6px; padding: 2px 7px; letter-spacing: 0.05em;
   flex-shrink: 0;
 }
+.global-home-btn {
+  position: fixed; top: 12px; right: 12px; z-index: 80;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 64px; height: 34px; padding: 0 12px;
+  border-radius: 18px; border: 1px solid rgba(0,0,0,0.16);
+  background: rgba(255,255,255,0.92); color: #1d1d1f;
+  font-size: 12px; font-weight: 700; text-decoration: none;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+.global-home-btn:active { transform: translateY(1px); background: #fff; }
 .mode-badge {
   font-size: 11px; color: var(--green); background: var(--green-dim);
   border: 1px solid rgba(29,158,117,0.4);
@@ -494,6 +505,7 @@ tr.round-sep td {
 </style>
 </head>
 <body>
+<a class="global-home-btn" href="home-1.html">HOME</a>
 
 <div id="screen-start" class="screen active">
   <div class="start-top">

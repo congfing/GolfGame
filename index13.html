@@ -16,6 +16,17 @@
     overflow-x: hidden;
   }
   .container { max-width: 1100px; margin: 0 auto; }
+  .global-home-btn {
+    position: fixed; top: 12px; right: 12px; z-index: 80;
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 64px; height: 34px; padding: 0 12px;
+    border-radius: 18px; border: 1px solid rgba(0,0,0,0.16);
+    background: rgba(255,255,255,0.92); color: #2c2c2a;
+    font-size: 12px; font-weight: 700; text-decoration: none;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  }
+  .global-home-btn:active { transform: translateY(1px); background: #fff; }
   h1 { font-size: 20px; margin: 0 0 16px; font-weight: 500; }
   h2 { font-size: 15px; margin: 0 0 12px; font-weight: 500; }
 
@@ -348,6 +359,7 @@
 </style>
 </head>
 <body>
+<a class="global-home-btn" href="home-1.html">HOME</a>
 <div class="container">
   <h1>ゴルフ得点計算 — ラスベガス ＆ オリンピック</h1>
 
