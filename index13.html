@@ -89,6 +89,15 @@
     border: 1px solid transparent; background: transparent;
     height: 26px; box-sizing: border-box; vertical-align: middle;
   }
+  table.scores input[type="number"]::-webkit-outer-spin-button,
+  table.scores input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  table.scores input[type="number"] {
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
   table.scores input:focus, table.scores select:focus {
     border-color: #1d9e75; outline: none; background: #fff;
   }
@@ -167,6 +176,22 @@
   .team2-cell input { color: #d45c00; font-weight: 600; }
   .team1-cell { border-left: 2px solid rgba(41,121,255,0.25) !important; }
   .team2-cell { border-left: 2px solid rgba(255,109,0,0.25) !important; }
+  .score-entry {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 2px; width: 100%; min-width: 0;
+  }
+  .score-step {
+    width: 18px; height: 20px; border: none; border-radius: 4px;
+    background: transparent; color: #555;
+    font-size: 12px; font-weight: 800; line-height: 1; padding: 0; cursor: pointer;
+  }
+  .score-step.down { transform: rotate(180deg); }
+  .score-step:active { background: rgba(29,158,117,0.18); color: #1d9e75; }
+  table.scores input.score-input {
+    flex: 1 1 auto; min-width: 28px !important; max-width: 40px;
+    text-align: center;
+  }
+  table.scores input.score-is-par { font-weight: 600; }
 
   /* スコア合計セル内の区切り線 */
   hr.score-divider { border: none; border-top: 1px solid #d0cec5; margin: 2px 0; }
@@ -830,9 +855,11 @@
       const _pd = showVegas ? PAIR_DEFS[vegasPairings[_roundIdx]] : null;
       for (let p = 0; p < playerCount; p++) {
         const sv = savedScores[h + '_' + p] || '';
+        const scoreValue = sv || par;
+        const scoreParClass = String(scoreValue) === String(par) ? ' score-is-par' : '';
         const _tc = _pd ? (_pd.t1.includes(p) ? 'team1-cell' : _pd.t2.includes(p) ? 'team2-cell' : '') : '';
         tbody += '<td class="order-td ' + _tc + '"><span class="order-badge" id="ord_' + h + '_' + p + '"></span></td>';
-        tbody += '<td class="score-td ' + _tc + '"><input type="number" id="s_' + h + '_' + p + '" min="1" value="' + sv + '" oninput="calculate(); showScoreOK(this)" /></td>';
+        tbody += '<td class="score-td ' + _tc + '"><span class="score-entry"><button type="button" class="score-step down" onclick="adjustScore(' + h + ',' + p + ',-1)">^</button><input type="number" class="score-input' + scoreParClass + '" id="s_' + h + '_' + p + '" min="1" data-par="' + par + '" placeholder="' + par + '" value="' + scoreValue + '" oninput="scoreChanged(this)" /><button type="button" class="score-step" onclick="adjustScore(' + h + ',' + p + ',1)">^</button></span></td>';
       }
       if (ghostPlayer) {
         tbody += '<td class="ghost-col">' + (par + 1) + '</td>';
@@ -1001,6 +1028,25 @@
   function getScore(h, p) {
     const v = document.getElementById('s_' + h + '_' + p)?.value;
     return v ? parseInt(v) : null;
+  }
+
+  function updateScoreInputTone(input) {
+    input.classList.toggle('score-is-par', input.value === input.dataset.par);
+  }
+
+  function scoreChanged(input) {
+    updateScoreInputTone(input);
+    calculate();
+    updateTeeOrder();
+    showScoreOK(input);
+  }
+
+  function adjustScore(h, p, delta) {
+    const input = document.getElementById('s_' + h + '_' + p);
+    if (!input) return;
+    const base = input.value ? parseInt(input.value, 10) : getPar(h);
+    input.value = Math.max(1, base + delta);
+    scoreChanged(input);
   }
 
   function calcVegasHole(h) {
