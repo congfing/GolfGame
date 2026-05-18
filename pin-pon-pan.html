@@ -311,6 +311,16 @@ tr:last-child td { border-bottom: 0; }
   line-height: 1.55;
   text-align: left;
 }
+.subtotal-item {
+  display: inline-block;
+  margin-right: 10px;
+  white-space: nowrap;
+}
+.subtotal-money {
+  color: rgba(0,0,0,0.52);
+  font-size: 11px;
+  margin-left: 3px;
+}
 .subtotal-points .empty-name-text {
   color: rgba(0,0,0,0.40);
 }
@@ -447,6 +457,19 @@ tr:last-child td { border-bottom: 0; }
         </select>
       </div>
       <div class="field">
+        <label for="rate">レート</label>
+        <select id="rate">
+          <option value="0">0円/点</option>
+          <option value="30">30円/点</option>
+          <option value="50">50円/点</option>
+          <option value="100">100円/点</option>
+          <option value="200">200円/点</option>
+          <option value="300">300円/点</option>
+          <option value="500">500円/点</option>
+          <option value="1000">1000円/点</option>
+        </select>
+      </div>
+      <div class="field">
         <label for="memo">メモ</label>
         <input id="memo" type="text" placeholder="任意">
       </div>
@@ -496,6 +519,7 @@ let state = {
   memo: '',
   holeCount: 18,
   startHole: 1,
+  rate: 100,
   names: playerDefaults.slice(),
   holes: []
 };
@@ -521,6 +545,8 @@ function initState() {
   state.holeCount = parseInt(state.holeCount || 18, 10);
   state.startHole = parseInt(state.startHole || 1, 10);
   if (![1, 10].includes(state.startHole)) state.startHole = 1;
+  state.rate = parseInt(state.rate ?? 100, 10);
+  if (!Number.isFinite(state.rate)) state.rate = 100;
   if (!Array.isArray(state.names) || state.names.length !== 4) state.names = playerDefaults.slice();
   if (!Array.isArray(state.holes)) state.holes = [];
   while (state.holes.length < state.holeCount) state.holes.push({ pin: null, pon: null, pan: null });
@@ -542,6 +568,7 @@ function syncFields() {
   document.getElementById('memo').value = state.memo || '';
   document.getElementById('holeCount').value = String(state.holeCount || 18);
   document.getElementById('startHole').value = String(state.startHole || 1);
+  document.getElementById('rate').value = String(state.rate ?? 100);
 }
 
 function bindFields() {
@@ -562,6 +589,11 @@ function bindFields() {
   });
   document.getElementById('startHole').addEventListener('change', event => {
     state.startHole = parseInt(event.target.value, 10);
+    persist();
+    renderScoreTable();
+  });
+  document.getElementById('rate').addEventListener('change', event => {
+    state.rate = parseInt(event.target.value, 10);
     persist();
     renderScoreTable();
   });
@@ -641,7 +673,9 @@ function displayHole(holeIndex) {
 function renderSubtotalRow(label, start, end, grand = false) {
   const totals = getTotals(start, end);
   const text = totals.map((item, index) => {
-    const chunk = `${escapeHtml(playerName(index))} ${item.total}`;
+    const name = escapeHtml(playerName(index));
+    const money = item.total * (state.rate || 0);
+    const chunk = `<span class="subtotal-item">${name} ${item.total}<span class="subtotal-money">${formatYen(money)}</span></span>`;
     return hasPlayerName(index) ? chunk : `<span class="empty-name-text">${chunk}</span>`;
   }).join(' / ');
   return `
@@ -650,6 +684,10 @@ function renderSubtotalRow(label, start, end, grand = false) {
       <td class="subtotal-points" colspan="4">${text}</td>
     </tr>
   `;
+}
+
+function formatYen(value) {
+  return `¥${Number(value || 0).toLocaleString('ja-JP')}`;
 }
 
 function holeTotalText(hole) {
@@ -781,6 +819,7 @@ function clearAll() {
     memo: '',
     holeCount: 18,
     startHole: 1,
+    rate: 100,
     names: playerDefaults.slice(),
     holes: blankHoles(18)
   };
