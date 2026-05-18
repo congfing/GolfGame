@@ -427,6 +427,7 @@
       <button class="action" style="margin-left: auto;" onclick="clearAll()">クリア</button>
       <button class="action primary" onclick="saveData()">保存</button>
       <button class="action" onclick="loadData()">読込</button>
+      <button class="action" onclick="loadSampleData('golf_20260517_大甲賀神コース.json')">2026/05/17 再現</button>
     </div>
     <div class="row" id="playerNameRow"></div>
   </div>
@@ -597,6 +598,7 @@
         <option value="">── 日付を選択 ──</option>
       </select>
       <button class="action primary" onclick="restoreFromDateSelect()">復元</button>
+      <button class="action" onclick="loadSampleData('golf_20260517_大甲賀神コース.json')">2026/05/17 再現</button>
     </div>
     <div id="historyList"></div>
   </div>
@@ -1528,6 +1530,90 @@
       reader.readAsText(file);
     };
     input.click();
+  }
+
+  async function loadSampleData(url) {
+    try {
+      const res = await fetch(url + '?t=' + Date.now());
+      if (!res.ok) throw new Error('再現データを取得できません: ' + res.status);
+      const data = await res.json();
+
+      mode = data.mode || 'both';
+      document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.mode === mode));
+      document.getElementById('vegasOptSection').classList.toggle('hidden', mode === 'olympic');
+      document.getElementById('olympicOptSection').classList.toggle('hidden', mode === 'vegas');
+
+      document.getElementById('playerCount').value = data.playerCount || 4;
+      document.getElementById('holeCount').value = data.holeCount || 18;
+
+      if (data.round) {
+        document.getElementById('courseName').value = data.round.course || '';
+        document.getElementById('courseSubName').value = data.round.courseSub || '';
+        document.getElementById('roundDate').value = data.round.date || '';
+        document.getElementById('roundTime').value = data.round.time || '';
+        document.getElementById('temperature').value = data.round.temperature || '';
+        document.getElementById('roundMemo').value = data.round.memo || '';
+        selectedWeather = data.round.weather || '';
+        document.querySelectorAll('.weather-btn').forEach(btn => {
+          btn.classList.toggle('selected', btn.dataset.weather === selectedWeather);
+        });
+        updateRoundSummary();
+      }
+
+      if (data.options) {
+        Object.keys(data.options).forEach(k => {
+          const el = document.getElementById(k);
+          if (el) el.value = data.options[k];
+        });
+      }
+      if (data.vegasPairings && Array.isArray(data.vegasPairings)) {
+        data.vegasPairings.forEach((v, i) => {
+          vegasPairings[i] = v;
+          const sel = document.getElementById('vPairR' + i);
+          if (sel) sel.value = v;
+        });
+      }
+      kzState = data.kzState ? Object.assign({}, data.kzState) : {};
+      siState = data.siState ? Object.assign({}, data.siState) : {};
+
+      rebuildAll();
+
+      setTimeout(() => {
+        if (data.names) {
+          data.names.forEach((n, i) => {
+            const el = document.getElementById('pname' + i);
+            if (el) el.value = n;
+          });
+        }
+        if (data.pars) Object.keys(data.pars).forEach(k => {
+          const el = document.getElementById('par_' + k);
+          if (el) el.value = data.pars[k];
+        });
+        rebuildHoles();
+
+        setTimeout(() => {
+          if (data.scores) Object.keys(data.scores).forEach(k => {
+            const el = document.getElementById('s_' + k);
+            if (el) el.value = data.scores[k];
+          });
+          if (data.metals) Object.keys(data.metals).forEach(k => {
+            const el = document.getElementById('m_' + k);
+            if (el) {
+              el.value = data.metals[k];
+              const parts = k.split('_');
+              updateMetalColor(parts[0], parts[1]);
+            }
+          });
+          if (data.birdies) Object.keys(data.birdies).forEach(k => {
+            const el = document.getElementById('b_' + k);
+            if (el) el.value = data.birdies[k];
+          });
+          calculate();
+        }, 50);
+      }, 50);
+    } catch (err) {
+      alert('再現データの読み込み失敗: ' + err.message);
+    }
   }
 
 
