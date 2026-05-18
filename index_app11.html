@@ -190,7 +190,13 @@ select { min-width: 80px; }
   transform: scale(1.05);
 }
 .arrow-btn.enabled:active { transform: scale(0.96); background: #0f6e56; }
-.score-scroll { flex: 1 1 auto; min-height: 0; overflow: auto; -webkit-overflow-scrolling: touch; }
+.score-scroll { flex: 1 1 auto; min-height: 0; height: 100%; overflow: auto; -webkit-overflow-scrolling: touch; position: relative; overscroll-behavior: contain; }
+#screen-scores.screen.active,
+#screen-olympic.screen.active { height: 100dvh; min-height: 0; overflow: hidden; }
+#screen-scores .screen-header,
+#screen-olympic .screen-header,
+#screen-scores .next-bar,
+#screen-olympic .next-bar { flex: 0 0 auto; }
 #screen-scores .screen-body,
 #screen-olympic .screen-body {
   display: flex;
@@ -198,13 +204,14 @@ select { min-width: 80px; }
   min-height: 0;
   overflow: hidden;
 }
-table.stbl { border-collapse: collapse; font-size: 12px; white-space: nowrap; width: 100%; table-layout: fixed; }
+table.stbl { border-collapse: separate; border-spacing: 0; font-size: 12px; white-space: nowrap; width: 100%; table-layout: fixed; }
 table.stbl th, table.stbl td {
   border: 1px solid rgba(0,0,0,0.08); padding: 3px 2px; text-align: center; min-width: 0; width: auto;
 }
+table.stbl thead { position: sticky; top: 0; z-index: 40; }
 table.stbl th {
-  background: rgba(0,0,0,0.06); color: #111;
-  font-size: 11px; font-weight: 500; position: sticky; top: 0; z-index: 20;
+  background: rgba(255,255,255,0.98); color: #111;
+  font-size: 11px; font-weight: 700; position: sticky; top: 0; z-index: 50;
   backdrop-filter: var(--glass-blur); -webkit-backdrop-filter: var(--glass-blur);
 }
 table.stbl .h-col { background: rgba(0,0,0,0.04); color: rgba(0,0,0,0.65); width: 32px; max-width: 32px; font-weight: 500; }
