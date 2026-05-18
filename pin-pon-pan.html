@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PIN PON PAN</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+:root {
+  --green: #1d9e75;
+  --green-soft: rgba(29,158,117,0.14);
+  --line: rgba(42,86,78,0.24);
+  --line-strong: rgba(30,76,68,0.38);
+  --text: #151515;
+  --muted: rgba(0,0,0,0.52);
+  --card: #fff;
+  --bg: #f1f3f4;
+}
+body {
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(255,255,255,0.92) 0 12%, transparent 28%),
+    radial-gradient(ellipse at 78% 18%, rgba(255,255,255,0.78) 0 10%, transparent 25%),
+    linear-gradient(180deg, #a9d9ef 0%, #d9f1f3 36%, #edf7eb 58%, #d9ecd0 100%);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+  font-size: 14px;
+  position: relative;
+}
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 10% 35%, rgba(255,255,255,0.72) 0 7%, transparent 18%),
+    radial-gradient(ellipse at 88% 45%, rgba(255,255,255,0.64) 0 9%, transparent 20%),
+    linear-gradient(160deg, transparent 0 56%, rgba(78,149,76,0.18) 56% 100%);
+}
+body::after {
+  content: "";
+  position: fixed;
+  left: -8%;
+  right: -8%;
+  bottom: -18%;
+  height: 42%;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 50% 100%, rgba(49,130,66,0.42) 0 45%, transparent 72%),
+    linear-gradient(180deg, transparent, rgba(72,146,75,0.28));
+}
+.global-home-btn {
+  position: fixed; top: 12px; right: 12px; z-index: 90;
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 64px; height: 34px; padding: 0 12px;
+  border-radius: 18px; border: 1px solid rgba(0,0,0,0.16);
+  background: rgba(255,255,255,0.92); color: #1d1d1f;
+  font-size: 12px; font-weight: 800; text-decoration: none;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+}
+.global-home-btn:active { transform: translateY(1px); background: #fff; }
+.app {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 18px 14px 34px;
+  position: relative;
+  z-index: 1;
+}
+.top {
+  align-items: center;
+  background: rgba(255,255,255,0.72);
+  border: 1px solid rgba(255,255,255,0.82);
+  border-radius: 18px;
+  box-shadow: 0 12px 28px rgba(38,91,80,0.10), inset 0 1px 0 rgba(255,255,255,0.76);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  display: flex;
+  gap: 12px;
+  margin: 0 0 14px;
+  padding: 12px 72px 12px 12px;
+}
+.mark {
+  align-items: center;
+  background: var(--green-soft);
+  border: 1px solid rgba(29,158,117,0.28);
+  border-radius: 16px;
+  color: var(--green);
+  display: flex;
+  flex: 0 0 52px;
+  font-size: 26px;
+  height: 52px;
+  justify-content: center;
+}
+h1 {
+  font-size: 27px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+  line-height: 1.05;
+}
+.subtitle {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  margin-top: 4px;
+}
+.card {
+  background: rgba(255,255,255,0.94);
+  border: 1px solid rgba(255,255,255,0.78);
+  border-radius: 14px;
+  box-shadow: 0 12px 28px rgba(38,91,80,0.12), inset 0 1px 0 rgba(255,255,255,0.72);
+  margin-bottom: 12px;
+  padding: 14px;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.section-title {
+  background: linear-gradient(180deg, rgba(29,158,117,0.13), rgba(29,158,117,0.05));
+  border: 1px solid rgba(29,158,117,0.18);
+  border-radius: 999px;
+  color: rgba(14,110,85,0.82);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 850;
+  letter-spacing: 0.16em;
+  margin: 0 0 10px;
+  padding: 5px 10px;
+  text-transform: uppercase;
+}
+.grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+input, select, button {
+  font: inherit;
+}
+input, select {
+  background: #f7f8f8;
+  border: 1px solid rgba(0,0,0,0.16);
+  border-radius: 9px;
+  color: var(--text);
+  min-height: 38px;
+  padding: 8px 10px;
+  width: 100%;
+}
+input:focus, select:focus {
+  background: #fff;
+  border-color: var(--green);
+  outline: none;
+}
+.names {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.name-box {
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 11px;
+  padding: 8px;
+}
+.name-box.empty {
+  background: #f0f1f1;
+}
+.name-box .tag {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 850;
+  margin-bottom: 5px;
+}
+.name-box.empty input {
+  background: #eceeee;
+  color: rgba(0,0,0,0.42);
+}
+.name-box:not(.empty) input {
+  background: #fff;
+  color: var(--text);
+}
+.name-box input::placeholder {
+  color: rgba(0,0,0,0.38);
+}
+.action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.action {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.16);
+  border-radius: 11px;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  min-height: 38px;
+  padding: 8px 12px;
+}
+.action.primary {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+.action:active { transform: translateY(1px); }
+.summary {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.summary-card {
+  background: linear-gradient(180deg, #fff, #f7faf9);
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 13px;
+  padding: 10px;
+}
+.summary-name {
+  color: rgba(0,0,0,0.72);
+  font-size: 12px;
+  font-weight: 850;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.summary-score {
+  color: var(--green);
+  font-size: 30px;
+  font-weight: 900;
+  line-height: 1;
+  margin-top: 7px;
+}
+.summary-break {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 6px;
+}
+.table-wrap {
+  border: 1.5px solid var(--line-strong);
+  border-radius: 12px;
+  max-height: calc(100dvh - 250px);
+  min-height: 320px;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+}
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  width: 100%;
+}
+th, td {
+  border-bottom: 1px solid var(--line);
+  border-right: 1px solid var(--line);
+  text-align: center;
+}
+th {
+  background: linear-gradient(180deg, rgba(29,158,117,0.94), rgba(18,132,98,0.94));
+  color: #fff;
+  font-size: 12px;
+  font-weight: 850;
+  height: 42px;
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.16);
+  border-bottom-color: rgba(16,94,70,0.58);
+  border-right-color: rgba(255,255,255,0.30);
+}
+th:last-child, td:last-child { border-right: 0; }
+tr:last-child td { border-bottom: 0; }
+#scoreTable thead th,
+#scoreTable thead th.hole-col,
+#scoreTable thead th.hole-total {
+  background: linear-gradient(180deg, rgba(29,158,117,0.94), rgba(18,132,98,0.94));
+  color: #fff;
+}
+.hole-col {
+  background: #f7f8f8;
+  color: var(--muted);
+  font-weight: 850;
+  width: 46px;
+}
+.subtotal-row td,
+.grand-total-row td {
+  background: #f7faf9;
+  color: rgba(0,0,0,0.72);
+  font-size: 12px;
+  font-weight: 900;
+  padding: 8px 5px;
+}
+.grand-total-row td {
+  background: var(--green-soft);
+  color: #0e6e55;
+}
+.subtotal-label {
+  color: #0e6e55;
+  letter-spacing: 0.08em;
+}
+.subtotal-points {
+  line-height: 1.55;
+  text-align: left;
+}
+.subtotal-points .empty-name-text {
+  color: rgba(0,0,0,0.40);
+}
+.choice-cell {
+  padding: 6px;
+  background: rgba(255,255,255,0.76);
+}
+.choice-row {
+  display: grid;
+  gap: 5px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+.player-btn {
+  background: #f7f8f8;
+  border: 1px solid rgba(0,0,0,0.12);
+  border-radius: 9px;
+  color: rgba(0,0,0,0.62);
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 850;
+  height: 34px;
+  overflow: hidden;
+  padding: 0 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.player-btn.empty-name {
+  background: #eceeee;
+  color: rgba(0,0,0,0.42);
+}
+.player-btn.selected {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+  box-shadow: 0 8px 14px rgba(29,158,117,0.22);
+}
+.player-btn:active { transform: scale(0.97); }
+.hole-total {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 850;
+  padding: 4px;
+  width: 54px;
+  background: rgba(247,250,249,0.84);
+}
+.history-list {
+  display: grid;
+  gap: 8px;
+}
+.history-item {
+  align-items: center;
+  background: #f7f8f8;
+  border: 1px solid rgba(0,0,0,0.08);
+  border-radius: 11px;
+  display: flex;
+  gap: 8px;
+  padding: 9px;
+}
+.history-main {
+  flex: 1;
+  min-width: 0;
+}
+.history-title {
+  font-size: 13px;
+  font-weight: 850;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.history-sub {
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 3px;
+}
+.tiny-btn {
+  background: #fff;
+  border: 1px solid rgba(0,0,0,0.16);
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 34px;
+  padding: 7px 10px;
+}
+.empty {
+  color: var(--muted);
+  font-size: 13px;
+  padding: 8px 2px;
+}
+@media (max-width: 640px) {
+  .app { padding-left: 10px; padding-right: 10px; }
+  h1 { font-size: 23px; }
+  .grid, .names, .summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .choice-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .table-wrap { max-height: calc(100dvh - 230px); }
+  th { font-size: 11px; }
+}
+</style>
+</head>
+<body>
+<a class="global-home-btn" href="home-1.html">HOME</a>
+<main class="app">
+  <header class="top">
+    <div class="mark">P</div>
+    <div>
+      <h1>PIN PON PAN</h1>
+      <div class="subtitle">POINT CALCULATOR</div>
+    </div>
+  </header>
+
+  <section class="card">
+    <div class="section-title">Round</div>
+    <div class="grid">
+      <div class="field">
+        <label for="courseName">ゴルフ場</label>
+        <input id="courseName" type="text" placeholder="ゴルフ場名">
+      </div>
+      <div class="field">
+        <label for="roundDate">日付</label>
+        <input id="roundDate" type="date">
+      </div>
+      <div class="field">
+        <label for="holeCount">ホール数</label>
+        <select id="holeCount">
+          <option value="18">18ホール</option>
+          <option value="9">9ホール</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="startHole">スタートH</label>
+        <select id="startHole">
+          <option value="1">1Hスタート</option>
+          <option value="10">10Hスタート</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="memo">メモ</label>
+        <input id="memo" type="text" placeholder="任意">
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">Players</div>
+    <div class="names" id="names"></div>
+    <div class="action-row">
+      <button class="action primary" type="button" onclick="saveSnapshot()">保存</button>
+      <button class="action" type="button" onclick="clearPoints()">点数クリア</button>
+      <button class="action" type="button" onclick="clearAll()">全クリア</button>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">Total</div>
+    <div class="summary" id="summary"></div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">入力表</div>
+    <div class="table-wrap">
+      <table id="scoreTable"></table>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="section-title">History</div>
+    <div class="history-list" id="historyList"></div>
+  </section>
+</main>
+
+<script>
+const playerDefaults = ['後藤', '西山', 'りえ', ''];
+const labels = [
+  { key: 'pin', name: 'ピン' },
+  { key: 'pon', name: 'ポン' },
+  { key: 'pan', name: 'パン' }
+];
+const storageKey = 'pinPonPanState';
+const historyKey = 'pinPonPanHistory';
+let state = {
+  courseName: '',
+  roundDate: '',
+  memo: '',
+  holeCount: 18,
+  startHole: 1,
+  names: playerDefaults.slice(),
+  holes: []
+};
+
+function blankHoles(count) {
+  return Array.from({ length: count }, () => ({ pin: null, pon: null, pan: null }));
+}
+
+function today() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function initState() {
+  const saved = localStorage.getItem(storageKey);
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      state = Object.assign(state, data);
+    } catch (err) {}
+  }
+  if (!state.roundDate) state.roundDate = today();
+  state.holeCount = parseInt(state.holeCount || 18, 10);
+  state.startHole = parseInt(state.startHole || 1, 10);
+  if (![1, 10].includes(state.startHole)) state.startHole = 1;
+  if (!Array.isArray(state.names) || state.names.length !== 4) state.names = playerDefaults.slice();
+  if (!Array.isArray(state.holes)) state.holes = [];
+  while (state.holes.length < state.holeCount) state.holes.push({ pin: null, pon: null, pan: null });
+  state.holes = state.holes.slice(0, state.holeCount);
+}
+
+function playerName(index) {
+  const name = (state.names[index] || '').trim();
+  return name || 'name';
+}
+
+function hasPlayerName(index) {
+  return !!(state.names[index] || '').trim();
+}
+
+function syncFields() {
+  document.getElementById('courseName').value = state.courseName || '';
+  document.getElementById('roundDate').value = state.roundDate || today();
+  document.getElementById('memo').value = state.memo || '';
+  document.getElementById('holeCount').value = String(state.holeCount || 18);
+  document.getElementById('startHole').value = String(state.startHole || 1);
+}
+
+function bindFields() {
+  ['courseName', 'roundDate', 'memo'].forEach(id => {
+    document.getElementById(id).addEventListener('input', event => {
+      state[id] = event.target.value;
+      persist();
+      renderHistory();
+    });
+  });
+  document.getElementById('holeCount').addEventListener('change', event => {
+    const nextCount = parseInt(event.target.value, 10);
+    state.holeCount = nextCount;
+    while (state.holes.length < nextCount) state.holes.push({ pin: null, pon: null, pan: null });
+    state.holes = state.holes.slice(0, nextCount);
+    persist();
+    renderAll();
+  });
+  document.getElementById('startHole').addEventListener('change', event => {
+    state.startHole = parseInt(event.target.value, 10);
+    persist();
+    renderScoreTable();
+  });
+}
+
+function renderNames() {
+  const box = document.getElementById('names');
+  box.innerHTML = state.names.map((name, index) => `
+    <div class="name-box ${hasPlayerName(index) ? '' : 'empty'}">
+      <div class="tag">PLAYER ${index + 1}</div>
+      <input type="text" value="${escapeHtml(name)}" data-name-index="${index}" placeholder="name">
+    </div>
+  `).join('');
+  box.querySelectorAll('input').forEach(input => {
+    input.addEventListener('input', event => {
+      const index = parseInt(event.target.dataset.nameIndex, 10);
+      state.names[index] = event.target.value;
+      persist();
+      renderScoreTable();
+      renderSummary();
+    });
+  });
+}
+
+function renderScoreTable() {
+  const table = document.getElementById('scoreTable');
+  const rows = [];
+  state.holes.forEach((hole, holeIndex) => {
+    rows.push(renderHoleRow(hole, holeIndex));
+    if (state.holeCount === 18 && holeIndex === 8) rows.push(renderSubtotalRow('前半', 0, 9));
+  });
+  if (state.holeCount === 18) {
+    rows.push(renderSubtotalRow('後半', 9, 18));
+  }
+  rows.push(renderSubtotalRow('合計', 0, state.holeCount, true));
+  table.innerHTML = `
+    <thead>
+      <tr>
+        <th class="hole-col">H</th>
+        <th>ピン</th>
+        <th>ポン</th>
+        <th>パン</th>
+        <th class="hole-total">点</th>
+      </tr>
+    </thead>
+    <tbody>${rows.join('')}</tbody>
+  `;
+}
+
+function renderHoleRow(hole, holeIndex) {
+  const cells = labels.map(label => `
+      <td class="choice-cell">
+        <div class="choice-row">
+          ${state.names.map((_, playerIndex) => `
+            <button type="button" class="player-btn ${hasPlayerName(playerIndex) ? '' : 'empty-name'} ${hole[label.key] === playerIndex ? 'selected' : ''}"
+              onclick="togglePoint(${holeIndex}, '${label.key}', ${playerIndex})">${escapeHtml(playerName(playerIndex))}</button>
+          `).join('')}
+        </div>
+      </td>
+    `).join('');
+  return `
+      <tr>
+        <td class="hole-col">${displayHole(holeIndex)}</td>
+        ${cells}
+        <td class="hole-total">${holeTotalText(hole)}</td>
+      </tr>
+    `;
+}
+
+function displayHole(holeIndex) {
+  if (state.startHole === 10) {
+    return holeIndex < 9 ? holeIndex + 10 : holeIndex - 8;
+  }
+  return holeIndex + 1;
+}
+
+function renderSubtotalRow(label, start, end, grand = false) {
+  const totals = getTotals(start, end);
+  const text = totals.map((item, index) => {
+    const chunk = `${escapeHtml(playerName(index))} ${item.total}`;
+    return hasPlayerName(index) ? chunk : `<span class="empty-name-text">${chunk}</span>`;
+  }).join(' / ');
+  return `
+    <tr class="${grand ? 'grand-total-row' : 'subtotal-row'}">
+      <td class="subtotal-label">${label}</td>
+      <td class="subtotal-points" colspan="4">${text}</td>
+    </tr>
+  `;
+}
+
+function holeTotalText(hole) {
+  const counts = [0, 0, 0, 0];
+  labels.forEach(label => {
+    const p = hole[label.key];
+    if (Number.isInteger(p)) counts[p] += 1;
+  });
+  return counts.map((v, i) => v ? `${playerName(i)} ${v}` : '').filter(Boolean).join(' / ') || '-';
+}
+
+function togglePoint(holeIndex, key, playerIndex) {
+  const hole = state.holes[holeIndex];
+  hole[key] = hole[key] === playerIndex ? null : playerIndex;
+  persist();
+  renderScoreTable();
+  renderSummary();
+}
+
+function getTotals(start = 0, end = state.holeCount) {
+  const totals = state.names.map(() => ({ total: 0, pin: 0, pon: 0, pan: 0 }));
+  state.holes.slice(start, end).forEach(hole => {
+    labels.forEach(label => {
+      const p = hole[label.key];
+      if (Number.isInteger(p) && totals[p]) {
+        totals[p].total += 1;
+        totals[p][label.key] += 1;
+      }
+    });
+  });
+  return totals;
+}
+
+function renderSummary() {
+  const totals = getTotals();
+  document.getElementById('summary').innerHTML = totals.map((item, index) => `
+    <div class="summary-card">
+      <div class="summary-name">${escapeHtml(playerName(index))}</div>
+      <div class="summary-score">${item.total}</div>
+      <div class="summary-break">ピン ${item.pin} / ポン ${item.pon} / パン ${item.pan}</div>
+    </div>
+  `).join('');
+}
+
+function persist() {
+  localStorage.setItem(storageKey, JSON.stringify(state));
+}
+
+function saveSnapshot() {
+  state.courseName = document.getElementById('courseName').value;
+  state.roundDate = document.getElementById('roundDate').value;
+  state.memo = document.getElementById('memo').value;
+  persist();
+  const history = getHistory();
+  const item = {
+    id: Date.now(),
+    savedAt: new Date().toISOString(),
+    data: JSON.parse(JSON.stringify(state))
+  };
+  history.unshift(item);
+  localStorage.setItem(historyKey, JSON.stringify(history.slice(0, 20)));
+  renderHistory();
+}
+
+function getHistory() {
+  try {
+    return JSON.parse(localStorage.getItem(historyKey) || '[]');
+  } catch (err) {
+    return [];
+  }
+}
+
+function renderHistory() {
+  const list = document.getElementById('historyList');
+  const history = getHistory();
+  if (!history.length) {
+    list.innerHTML = '<div class="empty">保存履歴はまだありません。</div>';
+    return;
+  }
+  list.innerHTML = history.map(item => {
+    const data = item.data || {};
+    const totals = Array.isArray(data.holes) ? totalsFor(data) : [];
+    const top = totals.length ? totals.reduce((a, b, i) => b.total > totals[a].total ? i : a, 0) : 0;
+    const title = `${data.roundDate || ''} ${data.courseName || 'PIN PON PAN'}`.trim();
+    const sub = totals.length ? `トップ: ${(data.names && data.names[top]) || `P${top + 1}`} ${totals[top].total}点` : '';
+    return `
+      <div class="history-item">
+        <div class="history-main">
+          <div class="history-title">${escapeHtml(title)}</div>
+          <div class="history-sub">${escapeHtml(sub)}</div>
+        </div>
+        <button class="tiny-btn" type="button" onclick="restoreHistory(${item.id})">復元</button>
+      </div>
+    `;
+  }).join('');
+}
+
+function totalsFor(data) {
+  const totals = (data.names || playerDefaults).map(() => ({ total: 0 }));
+  (data.holes || []).forEach(hole => {
+    labels.forEach(label => {
+      const p = hole[label.key];
+      if (Number.isInteger(p) && totals[p]) totals[p].total += 1;
+    });
+  });
+  return totals;
+}
+
+function restoreHistory(id) {
+  const item = getHistory().find(entry => entry.id === id);
+  if (!item || !item.data) return;
+  state = JSON.parse(JSON.stringify(item.data));
+  persist();
+  renderAll();
+}
+
+function clearPoints() {
+  if (!confirm('ピン・ポン・パンの入力だけをクリアしますか？')) return;
+  state.holes = blankHoles(state.holeCount);
+  persist();
+  renderAll();
+}
+
+function clearAll() {
+  if (!confirm('名前以外も含めて全てクリアしますか？')) return;
+  state = {
+    courseName: '',
+    roundDate: today(),
+    memo: '',
+    holeCount: 18,
+    startHole: 1,
+    names: playerDefaults.slice(),
+    holes: blankHoles(18)
+  };
+  persist();
+  renderAll();
+}
+
+function renderAll() {
+  syncFields();
+  renderNames();
+  renderScoreTable();
+  renderSummary();
+  renderHistory();
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  }[char]));
+}
+
+initState();
+bindFields();
+renderAll();
+</script>
+</body>
+</html>
