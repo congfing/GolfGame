@@ -1,2 +1,6 @@
 # Mac system files
 .DS_Store
+
+# Local archive folders
+APP TYPE/
+TEXT TYPE/
