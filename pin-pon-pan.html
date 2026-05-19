@@ -129,6 +129,21 @@ h1 {
   padding: 5px 10px;
   text-transform: uppercase;
 }
+.section-head {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.section-head .section-title {
+  margin-bottom: 0;
+}
+.section-note {
+  color: rgba(0,0,0,0.54);
+  font-size: 12px;
+  font-weight: 700;
+}
 .grid {
   display: grid;
   gap: 10px;
@@ -312,9 +327,24 @@ tr:last-child td { border-bottom: 0; }
   text-align: left;
 }
 .subtotal-item {
+  background: rgba(29,158,117,0.09);
+  border: 1px solid rgba(29,158,117,0.18);
+  border-radius: 999px;
   display: inline-block;
-  margin-right: 10px;
+  margin: 2px 8px 2px 0;
+  padding: 3px 8px;
   white-space: nowrap;
+}
+.score-chip {
+  background: #1d9e75;
+  border-radius: 999px;
+  color: #fff;
+  display: inline-block;
+  font-weight: 900;
+  margin-left: 4px;
+  min-width: 24px;
+  padding: 1px 7px;
+  text-align: center;
 }
 .subtotal-money {
   color: rgba(0,0,0,0.52);
@@ -359,12 +389,18 @@ tr:last-child td { border-bottom: 0; }
 }
 .player-btn:active { transform: scale(0.97); }
 .hole-total {
-  color: var(--muted);
+  color: #0e6e55;
   font-size: 12px;
   font-weight: 850;
   padding: 4px;
   width: 54px;
-  background: rgba(247,250,249,0.84);
+  background: rgba(29,158,117,0.07);
+}
+.hole-total .score-chip {
+  background: #2f87d8;
+  margin-left: 3px;
+  min-width: 22px;
+  padding: 1px 6px;
 }
 .history-list {
   display: grid;
@@ -492,7 +528,10 @@ tr:last-child td { border-bottom: 0; }
   </section>
 
   <section class="card">
-    <div class="section-title">入力表</div>
+    <div class="section-head">
+      <div class="section-title">入力表</div>
+      <div class="section-note">名前をタップして、色が付いた人が得点者です</div>
+    </div>
     <div class="table-wrap">
       <table id="scoreTable"></table>
     </div>
@@ -555,7 +594,7 @@ function initState() {
 
 function playerName(index) {
   const name = (state.names[index] || '').trim();
-  return name || 'name';
+  return name || '-';
 }
 
 function hasPlayerName(index) {
@@ -604,7 +643,7 @@ function renderNames() {
   box.innerHTML = state.names.map((name, index) => `
     <div class="name-box ${hasPlayerName(index) ? '' : 'empty'}">
       <div class="tag">PLAYER ${index + 1}</div>
-      <input type="text" value="${escapeHtml(name)}" data-name-index="${index}" placeholder="name">
+      <input type="text" value="${escapeHtml(name)}" data-name-index="${index}" placeholder="-">
     </div>
   `).join('');
   box.querySelectorAll('input').forEach(input => {
@@ -636,7 +675,7 @@ function renderScoreTable() {
         <th>ピン</th>
         <th>ポン</th>
         <th>パン</th>
-        <th class="hole-total">点</th>
+        <th class="hole-total">得点</th>
       </tr>
     </thead>
     <tbody>${rows.join('')}</tbody>
@@ -675,7 +714,7 @@ function renderSubtotalRow(label, start, end, grand = false) {
   const text = totals.map((item, index) => {
     const name = escapeHtml(playerName(index));
     const money = item.total * (state.rate || 0);
-    const chunk = `<span class="subtotal-item">${name} ${item.total}<span class="subtotal-money">${formatYen(money)}</span></span>`;
+    const chunk = `<span class="subtotal-item">${name} 得点 <span class="score-chip">${item.total}</span><span class="subtotal-money">${formatYen(money)}</span></span>`;
     return hasPlayerName(index) ? chunk : `<span class="empty-name-text">${chunk}</span>`;
   }).join(' / ');
   return `
@@ -696,7 +735,7 @@ function holeTotalText(hole) {
     const p = hole[label.key];
     if (Number.isInteger(p)) counts[p] += 1;
   });
-  return counts.map((v, i) => v ? `${playerName(i)} ${v}` : '').filter(Boolean).join(' / ') || '-';
+  return counts.map((v, i) => v ? `<span class="subtotal-item">${escapeHtml(playerName(i))} 得点 <span class="score-chip">${v}</span></span>` : '').filter(Boolean).join('') || '-';
 }
 
 function togglePoint(holeIndex, key, playerIndex) {
