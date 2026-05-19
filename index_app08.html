@@ -363,16 +363,15 @@ tr.round-sep td {
 
 /* ===== TEE ORDER ===== */
 .score-cell-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
-.score-entry { display: inline-flex; align-items: center; justify-content: center; gap: 2px; width: 100%; min-width: 0; }
-.score-step {
-  width: 18px; height: 20px; border: none; border-radius: 4px;
-  background: transparent; color: #555;
-  font-size: 12px; font-weight: 800; line-height: 1; padding: 0; cursor: pointer;
-}
-.score-step.down { transform: rotate(180deg); }
-.score-step:active { background: rgba(29,158,117,0.22); color: var(--green); }
-.score-cell-wrap input[type="number"] { flex: 1 1 auto; min-width: 28px !important; max-width: 40px; flex-shrink: 1; }
+.score-entry { display: inline-flex; align-items: center; justify-content: center; width: 100%; min-width: 0; touch-action: none; }
+.score-cell-wrap input[type="number"] { flex: 0 0 auto; min-width: 46px !important; max-width: 52px; flex-shrink: 0; cursor: ns-resize; }
 .score-cell-wrap input.score-is-par { font-weight: 600; }
+.score-input.slide-active {
+  background: rgba(29,158,117,0.16) !important;
+  border-color: var(--green) !important;
+  box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
+  transform: scale(1.08);
+}
 .order-badge {
   font-size: 10px; font-weight: 800; line-height: 1;
   min-width: 14px; text-align: center;
@@ -1073,7 +1072,7 @@ tr.round-sep td {
         const scoreValue=sv||par;
         const scoreParClass=String(scoreValue)===String(par)?' score-is-par':'';
         const _tc=(_pd&&_pd.t1.includes(p))?'team1-cell':(_pd&&_pd.t2.includes(p))?'team2-cell':'';
-        tbody+=`<td class="${_tc}"><div class="score-cell-wrap"><span class="score-entry"><button type="button" class="score-step down" onclick="adjustScore(${h},${p},-1)">^</button><input type="number" class="score-input${scoreParClass}" id="s_${h}_${p}" min="1" data-par="${par}" placeholder="${par}" value="${scoreValue}" oninput="scoreChanged(this)"><button type="button" class="score-step" onclick="adjustScore(${h},${p},1)">^</button></span><span class="order-badge" id="ord_${h}_${p}"></span></div></td>`;
+        tbody+=`<td class="${_tc}"><div class="score-cell-wrap"><span class="score-entry"><input type="number" class="score-input${scoreParClass}" id="s_${h}_${p}" min="1" data-par="${par}" data-hole="${h}" data-player="${p}" placeholder="${par}" value="${scoreValue}" oninput="scoreChanged(this)" onclick="tapScoreInput(this)"></span><span class="order-badge" id="ord_${h}_${p}"></span></div></td>`;
       }
       if(ghostPlayer) tbody+=`<td class="ghost-col">${par+1}</td>`;
       if(showBirdie) {
@@ -1274,6 +1273,54 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     input.value = Math.max(1, base + delta);
     scoreChanged(input);
   }
+
+  let slideScoreTarget = null;
+  let slideScoreStartY = 0;
+  let slideScoreStartValue = 0;
+  let slideScoreMoved = false;
+
+  function beginScoreSlide(input, clientY) {
+    slideScoreTarget = input;
+    slideScoreStartY = clientY;
+    slideScoreStartValue = input.value ? parseInt(input.value, 10) : parseInt(input.dataset.par || '4', 10);
+    slideScoreMoved = false;
+    input.classList.add('slide-active');
+  }
+
+  function moveScoreSlide(clientY) {
+    if (!slideScoreTarget) return;
+    const delta = Math.round((slideScoreStartY - clientY) / 22);
+    if (delta !== 0) slideScoreMoved = true;
+    const next = Math.max(1, slideScoreStartValue + delta);
+    if (String(next) !== slideScoreTarget.value) {
+      slideScoreTarget.value = next;
+      scoreChanged(slideScoreTarget);
+    }
+  }
+
+  function endScoreSlide() {
+    if (!slideScoreTarget) return;
+    slideScoreTarget.classList.remove('slide-active');
+    slideScoreTarget = null;
+  }
+
+  function tapScoreInput(input) {
+    if (slideScoreMoved) return;
+    const h = parseInt(input.dataset.hole, 10);
+    const p = parseInt(input.dataset.player, 10);
+    adjustScore(h, p, 1);
+  }
+
+  document.addEventListener('pointerdown', function(event) {
+    if (event.target && event.target.classList && event.target.classList.contains('score-input')) {
+      beginScoreSlide(event.target, event.clientY);
+    }
+  });
+  document.addEventListener('pointermove', function(event) {
+    moveScoreSlide(event.clientY);
+  });
+  document.addEventListener('pointerup', endScoreSlide);
+  document.addEventListener('pointercancel', endScoreSlide);
 
   function calcVegasHole(h) {
     if(mode==='olympic') return null;
