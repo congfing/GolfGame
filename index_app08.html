@@ -1068,7 +1068,7 @@ tr.round-sep td {
     for(let p=0;p<playerCount;p++) {
       thead+=`<th>${getName(p)}<br><span style="font-size:9px;color:rgba(0,0,0,0.3)">打数</span> <span style="font-size:9px;color:rgba(0,0,0,0.25)">打順</span></th>`;
     }
-    if(ghostPlayer) thead+='<th style="color:rgba(255,255,255,0.2)">4人目<br><span style="font-size:9px">Par+1</span></th>';
+    if(ghostPlayer) thead+='<th style="color:rgba(0,0,0,0.45)">-<br><span style="font-size:9px">Par+1</span></th>';
     if(showBirdie) thead+='<th style="min-width:70px">🐦</th>';
     if(showVegas) thead+='<th style="font-size:10px;font-weight:500">得点</th><th style="font-size:10px;font-weight:500">ペア</th>'; thead+='</tr></thead>';
     let tbody='<tbody>';
