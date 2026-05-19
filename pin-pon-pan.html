@@ -326,6 +326,7 @@ tr:last-child td { border-bottom: 0; }
 .subtotal-points {
   line-height: 1.55;
   text-align: left;
+  white-space: normal;
 }
 .subtotal-item {
   background: rgba(29,158,117,0.09);
@@ -337,7 +338,7 @@ tr:last-child td { border-bottom: 0; }
   white-space: normal;
 }
 .score-chip {
-  background: #1d9e75;
+  background: #2f87d8;
   border-radius: 999px;
   color: #fff;
   display: inline-block;
@@ -408,7 +409,6 @@ tr:last-child td { border-bottom: 0; }
   white-space: nowrap;
 }
 .hole-total .score-chip {
-  background: #2f87d8;
   margin-left: 3px;
   min-width: 22px;
   padding: 1px 6px;
@@ -533,7 +533,10 @@ tr:last-child td { border-bottom: 0; }
   </section>
 
   <section class="card">
-    <div class="section-title">Players</div>
+    <div class="section-head">
+      <div class="section-title">Players</div>
+      <div class="section-note">5文字まで 英字8文字まで</div>
+    </div>
     <div class="names" id="names"></div>
     <div class="action-row">
       <button class="action primary" type="button" onclick="saveSnapshot()">保存</button>
@@ -762,9 +765,9 @@ function renderSubtotalRow(label, start, end, grand = false) {
   const totals = getTotals(start, end);
   const text = activePlayerIndexes().map(index => {
     const item = totals[index];
-    const name = escapeHtml(playerName(index));
+    const name = escapeHtml(shortPlayerName(index));
     const money = item.total * (state.rate || 0);
-    const chunk = `<span class="subtotal-item">${name} 得点 <span class="score-chip">${item.total}</span><span class="subtotal-money">${formatYen(money)}</span></span>`;
+    const chunk = `<span class="subtotal-item">${name}:<span class="score-chip">${item.total}</span><span class="subtotal-money">${formatYen(money)}</span></span>`;
     return hasPlayerName(index) ? chunk : `<span class="empty-name-text">${chunk}</span>`;
   }).join(' / ');
   return `
@@ -790,7 +793,9 @@ function holeTotalText(hole) {
 
 function shortPlayerName(index) {
   const name = playerName(index);
-  return name.length > 3 ? name.slice(0, 3) : name;
+  const asciiOnly = /^[\x00-\x7F]+$/.test(name);
+  const limit = asciiOnly ? 8 : 5;
+  return name.length > limit ? name.slice(0, limit) : name;
 }
 
 function togglePoint(holeIndex, key, playerIndex) {
