@@ -183,25 +183,19 @@
   }
 
   /* チームカラー */
-  .team1-cell input { color: #1a5fc8; font-weight: 600; }
-  .team2-cell input { color: #d45c00; font-weight: 600; }
+  .team1-cell input, .team1-cell select { color: #1a5fc8; font-weight: 600; }
+  .team2-cell input, .team2-cell select { color: #d45c00; font-weight: 600; }
   .team1-cell { border-left: 2px solid rgba(41,121,255,0.25) !important; }
   .team2-cell { border-left: 2px solid rgba(255,109,0,0.25) !important; }
   .score-entry {
     display: inline-flex; align-items: center; justify-content: center;
     width: 100%; min-width: 0; touch-action: none;
   }
-  table.scores input.score-input {
-    flex: 0 0 auto; min-width: 46px !important; max-width: 52px;
-    text-align: center; cursor: ns-resize;
+  table.scores .score-input {
+    flex: 0 0 auto; min-width: 54px !important; max-width: 64px; height: 30px;
+    border-radius: 7px; text-align: center; font-size: 13px; font-weight: 700;
   }
-  table.scores input.score-is-par { font-weight: 600; }
-  table.scores input.score-input.slide-active {
-    background: rgba(29,158,117,0.16) !important;
-    border-color: #1d9e75 !important;
-    box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
-    transform: scale(1.08);
-  }
+  table.scores .score-is-par { font-weight: 800; }
 
   /* スコア合計セル内の区切り線 */
   hr.score-divider { border: none; border-top: 1px solid #d0cec5; margin: 2px 0; }
@@ -872,7 +866,7 @@
         const scoreParClass = String(scoreValue) === String(par) ? ' score-is-par' : '';
         const _tc = _pd ? (_pd.t1.includes(p) ? 'team1-cell' : _pd.t2.includes(p) ? 'team2-cell' : '') : '';
         tbody += '<td class="order-td ' + _tc + '"><span class="order-badge" id="ord_' + h + '_' + p + '"></span></td>';
-        tbody += '<td class="score-td ' + _tc + '"><span class="score-entry"><input type="number" class="score-input' + scoreParClass + '" id="s_' + h + '_' + p + '" min="1" data-par="' + par + '" data-hole="' + h + '" data-player="' + p + '" placeholder="-" value="' + scoreValue + '" oninput="scoreChanged(this)" onclick="tapScoreInput(this)" /></span></td>';
+        tbody += '<td class="score-td ' + _tc + '"><span class="score-entry"><select class="score-input' + scoreParClass + '" id="s_' + h + '_' + p + '" data-par="' + par + '" data-hole="' + h + '" data-player="' + p + '" onchange="scoreChanged(this)">' + buildScoreOptions(scoreValue) + '</select></span></td>';
       }
       if (ghostPlayer) {
         tbody += '<td class="ghost-col">' + (par + 1) + '</td>';
@@ -1043,6 +1037,14 @@
     return v ? parseInt(v) : null;
   }
 
+  function buildScoreOptions(selected) {
+    let html = '<option value="">-</option>';
+    for (let i = 1; i <= 15; i++) {
+      html += '<option value="' + i + '"' + (String(selected) === String(i) ? ' selected' : '') + '>' + i + '</option>';
+    }
+    return html;
+  }
+
   function updateScoreInputTone(input) {
     input.classList.toggle('score-is-par', input.value === input.dataset.par);
   }
@@ -1105,7 +1107,7 @@
   }
 
   document.addEventListener('pointerdown', function(event) {
-    if (event.target && event.target.classList && event.target.classList.contains('score-input')) {
+    if (event.target && event.target.tagName === 'INPUT' && event.target.classList && event.target.classList.contains('score-input')) {
       beginScoreSlide(event.target, event.clientY);
     }
   });

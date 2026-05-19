@@ -374,15 +374,12 @@ tr.round-sep td {
 
 /* ===== TEE ORDER ===== */
 .score-cell-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
-.score-entry { display: inline-flex; align-items: center; justify-content: center; width: 100%; min-width: 0; touch-action: none; }
-.score-cell-wrap input[type="number"] { flex: 0 0 auto; min-width: 46px !important; max-width: 52px; flex-shrink: 0; cursor: ns-resize; }
-.score-cell-wrap input.score-is-par { font-weight: 600; }
-.score-input.slide-active {
-  background: rgba(29,158,117,0.16) !important;
-  border-color: var(--green) !important;
-  box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
-  transform: scale(1.08);
+.score-entry { display: inline-flex; align-items: center; justify-content: center; width: 100%; min-width: 0; }
+.score-cell-wrap .score-input {
+  flex: 0 0 auto; min-width: 54px !important; max-width: 64px; height: 30px;
+  border-radius: 7px; text-align: center; font-size: 13px; font-weight: 700;
 }
+.score-cell-wrap .score-input.score-is-par { font-weight: 800; }
 .order-badge {
   font-size: 10px; font-weight: 800; line-height: 1;
   min-width: 14px; text-align: center;
@@ -1084,7 +1081,7 @@ tr.round-sep td {
         const scoreValue=sv||'';
         const scoreParClass=String(scoreValue)===String(par)?' score-is-par':'';
         const _tc=(_pd&&_pd.t1.includes(p))?'team1-cell':(_pd&&_pd.t2.includes(p))?'team2-cell':'';
-        tbody+=`<td class="${_tc}"><div class="score-cell-wrap"><span class="score-entry"><input type="number" class="score-input${scoreParClass}" id="s_${h}_${p}" min="1" data-par="${par}" data-hole="${h}" data-player="${p}" placeholder="-" value="${scoreValue}" oninput="scoreChanged(this)" onclick="tapScoreInput(this)"></span><span class="order-badge" id="ord_${h}_${p}"></span></div></td>`;
+        tbody+=`<td class="${_tc}"><div class="score-cell-wrap"><span class="score-entry"><select class="score-input${scoreParClass}" id="s_${h}_${p}" data-par="${par}" data-hole="${h}" data-player="${p}" onchange="scoreChanged(this)">${buildScoreOptions(scoreValue)}</select></span><span class="order-badge" id="ord_${h}_${p}"></span></div></td>`;
       }
       if(ghostPlayer) tbody+=`<td class="ghost-col">${par+1}</td>`;
       if(showBirdie) {
@@ -1268,6 +1265,14 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
 
   function getScore(h,p) { const v=document.getElementById('s_'+h+'_'+p)?.value; return v?parseInt(v):null; }
 
+  function buildScoreOptions(selected) {
+    let html = '<option value="">-</option>';
+    for (let i = 1; i <= 15; i++) {
+      html += `<option value="${i}" ${String(selected)===String(i)?'selected':''}>${i}</option>`;
+    }
+    return html;
+  }
+
   function updateScoreInputTone(input) {
     input.classList.toggle('score-is-par', input.value === input.dataset.par);
   }
@@ -1329,7 +1334,7 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
   }
 
   document.addEventListener('pointerdown', function(event) {
-    if (event.target && event.target.classList && event.target.classList.contains('score-input')) {
+    if (event.target && event.target.tagName === 'INPUT' && event.target.classList && event.target.classList.contains('score-input')) {
       beginScoreSlide(event.target, event.clientY);
     }
   });
