@@ -271,7 +271,7 @@ input:focus, select:focus {
 table {
   border-collapse: separate;
   border-spacing: 0;
-  table-layout: fixed;
+  table-layout: auto;
   width: 100%;
 }
 th, td {
@@ -333,7 +333,7 @@ tr:last-child td { border-bottom: 0; }
   display: inline-block;
   margin: 2px 8px 2px 0;
   padding: 3px 8px;
-  white-space: nowrap;
+  white-space: normal;
 }
 .score-chip {
   background: #1d9e75;
@@ -393,7 +393,8 @@ tr:last-child td { border-bottom: 0; }
   font-size: 12px;
   font-weight: 850;
   padding: 4px;
-  width: 54px;
+  min-width: 98px;
+  width: 16%;
   background: rgba(29,158,117,0.07);
 }
 .hole-total .score-chip {
@@ -486,6 +487,13 @@ tr:last-child td { border-bottom: 0; }
         </select>
       </div>
       <div class="field">
+        <label for="playerCount">人数</label>
+        <select id="playerCount">
+          <option value="3">3人</option>
+          <option value="4">4人</option>
+        </select>
+      </div>
+      <div class="field">
         <label for="startHole">スタートH</label>
         <select id="startHole">
           <option value="1">1Hスタート</option>
@@ -557,6 +565,7 @@ let state = {
   roundDate: '',
   memo: '',
   holeCount: 18,
+  playerCount: 3,
   startHole: 1,
   rate: 100,
   names: playerDefaults.slice(),
@@ -582,6 +591,10 @@ function initState() {
   }
   if (!state.roundDate) state.roundDate = today();
   state.holeCount = parseInt(state.holeCount || 18, 10);
+  const inferredPlayerCount = (state.names && String(state.names[3] || '').trim()) ? 4 : 3;
+  state.playerCount = parseInt(state.playerCount || inferredPlayerCount, 10);
+  if (inferredPlayerCount === 3) state.playerCount = 3;
+  if (![3, 4].includes(state.playerCount)) state.playerCount = 4;
   state.startHole = parseInt(state.startHole || 1, 10);
   if (![1, 10].includes(state.startHole)) state.startHole = 1;
   state.rate = parseInt(state.rate ?? 100, 10);
@@ -590,6 +603,7 @@ function initState() {
   if (!Array.isArray(state.holes)) state.holes = [];
   while (state.holes.length < state.holeCount) state.holes.push({ pin: null, pon: null, pan: null });
   state.holes = state.holes.slice(0, state.holeCount);
+  normalizePlayerSelections();
 }
 
 function playerName(index) {
@@ -601,11 +615,25 @@ function hasPlayerName(index) {
   return !!(state.names[index] || '').trim();
 }
 
+function activePlayerIndexes() {
+  return Array.from({ length: state.playerCount || 4 }, (_, index) => index);
+}
+
+function normalizePlayerSelections() {
+  const limit = state.playerCount || 4;
+  state.holes.forEach(hole => {
+    labels.forEach(label => {
+      if (Number.isInteger(hole[label.key]) && hole[label.key] >= limit) hole[label.key] = null;
+    });
+  });
+}
+
 function syncFields() {
   document.getElementById('courseName').value = state.courseName || '';
   document.getElementById('roundDate').value = state.roundDate || today();
   document.getElementById('memo').value = state.memo || '';
   document.getElementById('holeCount').value = String(state.holeCount || 18);
+  document.getElementById('playerCount').value = String(state.playerCount || 3);
   document.getElementById('startHole').value = String(state.startHole || 1);
   document.getElementById('rate').value = String(state.rate ?? 100);
 }
@@ -626,6 +654,12 @@ function bindFields() {
     persist();
     renderAll();
   });
+  document.getElementById('playerCount').addEventListener('change', event => {
+    state.playerCount = parseInt(event.target.value, 10);
+    normalizePlayerSelections();
+    persist();
+    renderAll();
+  });
   document.getElementById('startHole').addEventListener('change', event => {
     state.startHole = parseInt(event.target.value, 10);
     persist();
@@ -640,12 +674,15 @@ function bindFields() {
 
 function renderNames() {
   const box = document.getElementById('names');
-  box.innerHTML = state.names.map((name, index) => `
+  box.innerHTML = activePlayerIndexes().map(index => {
+    const name = state.names[index] || '';
+    return `
     <div class="name-box ${hasPlayerName(index) ? '' : 'empty'}">
       <div class="tag">PLAYER ${index + 1}</div>
       <input type="text" value="${escapeHtml(name)}" data-name-index="${index}" placeholder="-">
     </div>
-  `).join('');
+  `;
+  }).join('');
   box.querySelectorAll('input').forEach(input => {
     input.addEventListener('input', event => {
       const index = parseInt(event.target.dataset.nameIndex, 10);
@@ -683,10 +720,11 @@ function renderScoreTable() {
 }
 
 function renderHoleRow(hole, holeIndex) {
+  const players = activePlayerIndexes();
   const cells = labels.map(label => `
       <td class="choice-cell">
-        <div class="choice-row">
-          ${state.names.map((_, playerIndex) => `
+        <div class="choice-row" style="grid-template-columns: repeat(${players.length}, minmax(0, 1fr));">
+          ${players.map(playerIndex => `
             <button type="button" class="player-btn ${hasPlayerName(playerIndex) ? '' : 'empty-name'} ${hole[label.key] === playerIndex ? 'selected' : ''}"
               onclick="togglePoint(${holeIndex}, '${label.key}', ${playerIndex})">${escapeHtml(playerName(playerIndex))}</button>
           `).join('')}
@@ -711,7 +749,8 @@ function displayHole(holeIndex) {
 
 function renderSubtotalRow(label, start, end, grand = false) {
   const totals = getTotals(start, end);
-  const text = totals.map((item, index) => {
+  const text = activePlayerIndexes().map(index => {
+    const item = totals[index];
     const name = escapeHtml(playerName(index));
     const money = item.total * (state.rate || 0);
     const chunk = `<span class="subtotal-item">${name} 得点 <span class="score-chip">${item.total}</span><span class="subtotal-money">${formatYen(money)}</span></span>`;
@@ -735,7 +774,7 @@ function holeTotalText(hole) {
     const p = hole[label.key];
     if (Number.isInteger(p)) counts[p] += 1;
   });
-  return counts.map((v, i) => v ? `<span class="subtotal-item">${escapeHtml(playerName(i))} 得点 <span class="score-chip">${v}</span></span>` : '').filter(Boolean).join('') || '-';
+  return activePlayerIndexes().map(i => counts[i] ? `<span class="subtotal-item">${escapeHtml(playerName(i))} 得点 <span class="score-chip">${counts[i]}</span></span>` : '').filter(Boolean).join('') || '-';
 }
 
 function togglePoint(holeIndex, key, playerIndex) {
@@ -762,13 +801,16 @@ function getTotals(start = 0, end = state.holeCount) {
 
 function renderSummary() {
   const totals = getTotals();
-  document.getElementById('summary').innerHTML = totals.map((item, index) => `
+  document.getElementById('summary').innerHTML = activePlayerIndexes().map(index => {
+    const item = totals[index];
+    return `
     <div class="summary-card">
       <div class="summary-name">${escapeHtml(playerName(index))}</div>
       <div class="summary-score">${item.total}</div>
       <div class="summary-break">ピン ${item.pin} / ポン ${item.pon} / パン ${item.pan}</div>
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 function persist() {
@@ -811,7 +853,7 @@ function renderHistory() {
     const totals = Array.isArray(data.holes) ? totalsFor(data) : [];
     const top = totals.length ? totals.reduce((a, b, i) => b.total > totals[a].total ? i : a, 0) : 0;
     const title = `${data.roundDate || ''} ${data.courseName || 'PIN PON PAN'}`.trim();
-    const sub = totals.length ? `トップ: ${(data.names && data.names[top]) || `P${top + 1}`} ${totals[top].total}点` : '';
+    const sub = totals.length ? `トップ: ${(data.names && data.names[top]) || '-'} ${totals[top].total}点` : '';
     return `
       <div class="history-item">
         <div class="history-main">
@@ -825,7 +867,8 @@ function renderHistory() {
 }
 
 function totalsFor(data) {
-  const totals = (data.names || playerDefaults).map(() => ({ total: 0 }));
+  const count = [3, 4].includes(parseInt(data.playerCount || 4, 10)) ? parseInt(data.playerCount || 4, 10) : 4;
+  const totals = Array.from({ length: count }, () => ({ total: 0 }));
   (data.holes || []).forEach(hole => {
     labels.forEach(label => {
       const p = hole[label.key];
@@ -857,6 +900,7 @@ function clearAll() {
     roundDate: today(),
     memo: '',
     holeCount: 18,
+    playerCount: 3,
     startHole: 1,
     rate: 100,
     names: playerDefaults.slice(),
