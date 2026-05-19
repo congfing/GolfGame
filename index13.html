@@ -868,11 +868,11 @@
       const _pd = showVegas ? PAIR_DEFS[vegasPairings[_roundIdx]] : null;
       for (let p = 0; p < playerCount; p++) {
         const sv = savedScores[h + '_' + p] || '';
-        const scoreValue = sv || par;
+        const scoreValue = sv || '';
         const scoreParClass = String(scoreValue) === String(par) ? ' score-is-par' : '';
         const _tc = _pd ? (_pd.t1.includes(p) ? 'team1-cell' : _pd.t2.includes(p) ? 'team2-cell' : '') : '';
         tbody += '<td class="order-td ' + _tc + '"><span class="order-badge" id="ord_' + h + '_' + p + '"></span></td>';
-        tbody += '<td class="score-td ' + _tc + '"><span class="score-entry"><input type="number" class="score-input' + scoreParClass + '" id="s_' + h + '_' + p + '" min="1" data-par="' + par + '" data-hole="' + h + '" data-player="' + p + '" placeholder="' + par + '" value="' + scoreValue + '" oninput="scoreChanged(this)" onclick="tapScoreInput(this)" /></span></td>';
+        tbody += '<td class="score-td ' + _tc + '"><span class="score-entry"><input type="number" class="score-input' + scoreParClass + '" id="s_' + h + '_' + p + '" min="1" data-par="' + par + '" data-hole="' + h + '" data-player="' + p + '" placeholder="-" value="' + scoreValue + '" oninput="scoreChanged(this)" onclick="tapScoreInput(this)" /></span></td>';
       }
       if (ghostPlayer) {
         tbody += '<td class="ghost-col">' + (par + 1) + '</td>';
@@ -1094,6 +1094,11 @@
 
   function tapScoreInput(input) {
     if (slideScoreMoved) return;
+    if (!input.value) {
+      input.value = input.dataset.par || getPar(parseInt(input.dataset.hole, 10));
+      scoreChanged(input);
+      return;
+    }
     const h = parseInt(input.dataset.hole, 10);
     const p = parseInt(input.dataset.player, 10);
     adjustScore(h, p, 1);

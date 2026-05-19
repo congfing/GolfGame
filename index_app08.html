@@ -1081,10 +1081,10 @@ tr.round-sep td {
       tbody+=`<tr${_isRndSep?' class="round-sep"':''}><td class="h-col">${getDisplayHole(h)}</td><td class="par-col">${par}</td>`;
       for(let p=0;p<playerCount;p++) {
         const sv=saved.s[h+'_'+p]||'';
-        const scoreValue=sv||par;
+        const scoreValue=sv||'';
         const scoreParClass=String(scoreValue)===String(par)?' score-is-par':'';
         const _tc=(_pd&&_pd.t1.includes(p))?'team1-cell':(_pd&&_pd.t2.includes(p))?'team2-cell':'';
-        tbody+=`<td class="${_tc}"><div class="score-cell-wrap"><span class="score-entry"><input type="number" class="score-input${scoreParClass}" id="s_${h}_${p}" min="1" data-par="${par}" data-hole="${h}" data-player="${p}" placeholder="${par}" value="${scoreValue}" oninput="scoreChanged(this)" onclick="tapScoreInput(this)"></span><span class="order-badge" id="ord_${h}_${p}"></span></div></td>`;
+        tbody+=`<td class="${_tc}"><div class="score-cell-wrap"><span class="score-entry"><input type="number" class="score-input${scoreParClass}" id="s_${h}_${p}" min="1" data-par="${par}" data-hole="${h}" data-player="${p}" placeholder="-" value="${scoreValue}" oninput="scoreChanged(this)" onclick="tapScoreInput(this)"></span><span class="order-badge" id="ord_${h}_${p}"></span></div></td>`;
       }
       if(ghostPlayer) tbody+=`<td class="ghost-col">${par+1}</td>`;
       if(showBirdie) {
@@ -1318,6 +1318,11 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
 
   function tapScoreInput(input) {
     if (slideScoreMoved) return;
+    if (!input.value) {
+      input.value = input.dataset.par || getPar(parseInt(input.dataset.hole, 10));
+      scoreChanged(input);
+      return;
+    }
     const h = parseInt(input.dataset.hole, 10);
     const p = parseInt(input.dataset.player, 10);
     adjustScore(h, p, 1);
