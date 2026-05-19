@@ -55,6 +55,17 @@ body {
 }
 .back-btn:active { background: var(--glass-hover); border-color: var(--green); }
 .screen-title { font-size: 17px; font-weight: 600; flex: 1; }
+.header-init-btn {
+  border: 1px solid rgba(0,0,0,0.16);
+  border-radius: 999px;
+  background: rgba(0,0,0,0.05);
+  color: #333;
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 32px;
+  padding: 6px 11px;
+}
+.header-init-btn:active { background: rgba(29,158,117,0.16); color: var(--green); }
 .ver-tag {
   font-size: 10px; font-weight: 700; color: rgba(0,0,0,0.3);
   background: rgba(0,0,0,0.06); border: 1px solid rgba(0,0,0,0.1);
@@ -541,6 +552,7 @@ tr.round-sep td {
   <div class="screen-header">
     <button class="back-btn" onclick="showScreen('screen-start')">‹</button>
     <div class="screen-title">設定</div>
+    <button class="header-init-btn" onclick="initializeRoundInputs()">初期化</button>
     <div class="mode-badge" id="modeBadge"></div>
     <span class="ver-tag">v08</span>
   </div>
@@ -1688,6 +1700,18 @@ function rebuildAll() { rebuildParPanel(); rebuildPlayers(); renderPairOptions()
     ['vegas','olympic','both'].forEach(g=>{document.getElementById('card-'+g).classList.remove('selected');document.getElementById('check-'+g).textContent='';});
     document.getElementById('arrowBtn').classList.remove('enabled');
     showScreen('screen-start');
+  }
+
+  function initializeRoundInputs() {
+    if (!confirm('スコア入力を初期化しますか？（名前・コース・Par設定は残します）')) return;
+    document.querySelectorAll('.score-input').forEach(input => { input.value = ''; });
+    document.querySelectorAll('select[id^="m_"], select[id^="b_"]').forEach(sel => { sel.value = ''; });
+    kzState = {};
+    siState = {};
+    rebuildHoles();
+    calculate();
+    updateTeeOrder();
+    showScreen('screen-settings');
   }
 
   function saveData() {

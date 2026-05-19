@@ -189,20 +189,19 @@
   .team2-cell { border-left: 2px solid rgba(255,109,0,0.25) !important; }
   .score-entry {
     display: inline-flex; align-items: center; justify-content: center;
-    gap: 2px; width: 100%; min-width: 0;
+    width: 100%; min-width: 0; touch-action: none;
   }
-  .score-step {
-    width: 18px; height: 20px; border: none; border-radius: 4px;
-    background: transparent; color: #555;
-    font-size: 12px; font-weight: 800; line-height: 1; padding: 0; cursor: pointer;
-  }
-  .score-step.down { transform: rotate(180deg); }
-  .score-step:active { background: rgba(29,158,117,0.18); color: #1d9e75; }
   table.scores input.score-input {
-    flex: 1 1 auto; min-width: 28px !important; max-width: 40px;
-    text-align: center;
+    flex: 0 0 auto; min-width: 46px !important; max-width: 52px;
+    text-align: center; cursor: ns-resize;
   }
   table.scores input.score-is-par { font-weight: 600; }
+  table.scores input.score-input.slide-active {
+    background: rgba(29,158,117,0.16) !important;
+    border-color: #1d9e75 !important;
+    box-shadow: 0 0 0 3px rgba(29,158,117,0.12);
+    transform: scale(1.08);
+  }
 
   /* スコア合計セル内の区切り線 */
   hr.score-divider { border: none; border-top: 1px solid #d0cec5; margin: 2px 0; }
@@ -436,7 +435,7 @@
       <label>レート</label>
       <input type="number" id="rate" value="100" onchange="calculate()" />
       <span style="font-size: 13px; color: #5f5e5a;">円/点</span>
-      <button class="action" style="margin-left: auto;" onclick="clearAll()">クリア</button>
+      <button class="action" style="margin-left: auto;" onclick="clearAll()">初期化</button>
       <button class="action primary" onclick="saveData()">保存</button>
       <button class="action" onclick="loadData()">読込</button>
       <button class="action" onclick="loadSampleData('golf_20260517_大甲賀神コース.json')">2026/05/17 再現</button>
@@ -852,7 +851,7 @@
       thead += '<th>' + getName(p) + '<br><span style="font-size:10px;color:#888780;">打数</span></th>';
     }
     if (ghostPlayer) {
-      thead += '<th style="color:#888780;">4人目<br><span style="font-size:10px;">Par+1</span></th>';
+      thead += '<th style="color:#888780;">-<br><span style="font-size:10px;">Par+1</span></th>';
     }
 
     if (showVegas) thead += '<th class="vscore-col">得点</th>';
@@ -873,7 +872,7 @@
         const scoreParClass = String(scoreValue) === String(par) ? ' score-is-par' : '';
         const _tc = _pd ? (_pd.t1.includes(p) ? 'team1-cell' : _pd.t2.includes(p) ? 'team2-cell' : '') : '';
         tbody += '<td class="order-td ' + _tc + '"><span class="order-badge" id="ord_' + h + '_' + p + '"></span></td>';
-        tbody += '<td class="score-td ' + _tc + '"><span class="score-entry"><button type="button" class="score-step down" onclick="adjustScore(' + h + ',' + p + ',-1)">^</button><input type="number" class="score-input' + scoreParClass + '" id="s_' + h + '_' + p + '" min="1" data-par="' + par + '" placeholder="' + par + '" value="' + scoreValue + '" oninput="scoreChanged(this)" /><button type="button" class="score-step" onclick="adjustScore(' + h + ',' + p + ',1)">^</button></span></td>';
+        tbody += '<td class="score-td ' + _tc + '"><span class="score-entry"><input type="number" class="score-input' + scoreParClass + '" id="s_' + h + '_' + p + '" min="1" data-par="' + par + '" data-hole="' + h + '" data-player="' + p + '" placeholder="' + par + '" value="' + scoreValue + '" oninput="scoreChanged(this)" onclick="tapScoreInput(this)" /></span></td>';
       }
       if (ghostPlayer) {
         tbody += '<td class="ghost-col">' + (par + 1) + '</td>';
@@ -1062,6 +1061,54 @@
     input.value = Math.max(1, base + delta);
     scoreChanged(input);
   }
+
+  let slideScoreTarget = null;
+  let slideScoreStartY = 0;
+  let slideScoreStartValue = 0;
+  let slideScoreMoved = false;
+
+  function beginScoreSlide(input, clientY) {
+    slideScoreTarget = input;
+    slideScoreStartY = clientY;
+    slideScoreStartValue = input.value ? parseInt(input.value, 10) : parseInt(input.dataset.par || '4', 10);
+    slideScoreMoved = false;
+    input.classList.add('slide-active');
+  }
+
+  function moveScoreSlide(clientY) {
+    if (!slideScoreTarget) return;
+    const delta = Math.round((slideScoreStartY - clientY) / 22);
+    if (delta !== 0) slideScoreMoved = true;
+    const next = Math.max(1, slideScoreStartValue + delta);
+    if (String(next) !== slideScoreTarget.value) {
+      slideScoreTarget.value = next;
+      scoreChanged(slideScoreTarget);
+    }
+  }
+
+  function endScoreSlide() {
+    if (!slideScoreTarget) return;
+    slideScoreTarget.classList.remove('slide-active');
+    slideScoreTarget = null;
+  }
+
+  function tapScoreInput(input) {
+    if (slideScoreMoved) return;
+    const h = parseInt(input.dataset.hole, 10);
+    const p = parseInt(input.dataset.player, 10);
+    adjustScore(h, p, 1);
+  }
+
+  document.addEventListener('pointerdown', function(event) {
+    if (event.target && event.target.classList && event.target.classList.contains('score-input')) {
+      beginScoreSlide(event.target, event.clientY);
+    }
+  });
+  document.addEventListener('pointermove', function(event) {
+    moveScoreSlide(event.clientY);
+  });
+  document.addEventListener('pointerup', endScoreSlide);
+  document.addEventListener('pointercancel', endScoreSlide);
 
   function calcVegasHole(h) {
     if (mode === 'olympic') return null;
